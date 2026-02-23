@@ -1,0 +1,15 @@
+{
+  "name": "gigzs",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/backend"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace apps/web run dev",
+    "seed": "tsx scripts/seed.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}
