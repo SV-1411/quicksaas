@@ -37,7 +37,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     const { data: modules, error: modulesError } = await supabase
       .from('project_modules')
-      .select('id, module_key, module_name, module_status, structured_progress, module_weight, updated_at')
+      .select('id, module_key, module_name, module_status, structured_progress, module_weight, updated_at, definition_of_done')
       .eq('project_id', params.id)
       .is('deleted_at', null)
       .order('created_at', { ascending: true });
@@ -50,12 +50,20 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     if (moduleIds.length > 0) {
       const { data: sessions, error: sessionsError } = await supabase
         .from('airobuilder_sessions')
-        .select('id, module_id, deployment_url, build_url, session_status')
+        .select('id, module_id, deployment_url, build_url, session_status, external_session_id')
         .in('module_id', moduleIds);
       
       if (sessionsError) throw sessionsError;
       sessionsData = sessions ?? [];
     }
+
+    const { data: progressLogs, error: logsError } = await supabase
+      .from('progress_logs')
+      .select('id, module_id, public_summary, percent_delta, created_at')
+      .eq('project_id', params.id)
+      .order('created_at', { ascending: false });
+
+    if (logsError) throw logsError;
 
     const riskLogs = actor.role === 'admin'
       ? await supabase
@@ -70,6 +78,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       project, 
       modules: modules ?? [], 
       sessions: sessionsData, 
+      progressLogs: progressLogs ?? [],
       risks: riskLogs.data ?? [] 
     });
   } catch (error) {

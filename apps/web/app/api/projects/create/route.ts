@@ -1,31 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { calculateDynamicPrice } from '../../../../../../services/pricing-engine';
-import { autoAssignTopCandidate } from '../../../../../../services/matching-engine';
 import { createSupabaseServiceClient } from '../../../../lib/supabase/server';
+import { validateIntake, intakeToStructuredRequirements, structuredToGml } from '../../../../../../services/intake-mapper';
+import { planModulesForProject } from '../../../../../../services/module-planner';
+import { planAssignmentsForModule } from '../../../../../../services/assignment-engine';
 
 interface CreateProjectBody {
   title: string;
-  rawRequirement: string;
-}
-
-function inferRequirement(rawRequirement: string) {
-  const lowered = rawRequirement.toLowerCase();
-  return {
-    productType: lowered.includes('app') ? 'web_app' : 'platform',
-    integrations: ['payment-gateway', lowered.includes('whatsapp') ? 'whatsapp' : 'email'],
-    urgency: lowered.includes('urgent') ? 'high' : 'medium',
-    scope: lowered.length > 500 ? 'large' : 'medium',
-    complexityScore: Math.min(100, Math.max(10, Math.floor(lowered.length / 20))),
-  };
-}
-
-function buildModules(projectId: string) {
-  return [
-    { project_id: projectId, module_key: 'frontend', module_name: 'Frontend', module_weight: 0.25 },
-    { project_id: projectId, module_key: 'backend', module_name: 'Backend', module_weight: 0.35 },
-    { project_id: projectId, module_key: 'integrations', module_name: 'Integrations', module_weight: 0.25 },
-    { project_id: projectId, module_key: 'deployment', module_name: 'Deployment', module_weight: 0.15 },
-  ];
+  rawRequirement?: string;
+  intake?: any;
 }
 
 export async function POST(request: NextRequest) {
@@ -55,15 +38,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    if (!body.rawRequirement || !body.title) {
+    if (!body.title) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
     }
 
-    const structured = inferRequirement(body.rawRequirement);
+    const intake = body.intake ?? null;
+    const missing = intake ? validateIntake(intake) : ['intake'];
+    if (missing.length) {
+      return NextResponse.json({ error: `Missing intake fields: ${missing.join(', ')}` }, { status: 400 });
+    }
+
+    const structured = intakeToStructuredRequirements(intake);
+    const gml = structuredToGml(structured);
+
     const pricing = calculateDynamicPrice({
       complexityScore: structured.complexityScore,
       baseRate: 1200,
-      urgencyMultiplier: structured.urgency === 'high' ? 15000 : 6000,
+      urgencyMultiplier: structured.urgency === 'high' ? 15000 : structured.urgency === 'medium' ? 6000 : 3000,
       resourceLoadFactor: 5000,
       integrationWeight: structured.integrations.length * 3500,
       activeProjects: 1250,
@@ -75,8 +66,10 @@ export async function POST(request: NextRequest) {
       .insert({
         client_id: actor.id,
         title: body.title,
-        raw_requirement: body.rawRequirement,
+        raw_requirement: body.rawRequirement ?? intake.notes,
         structured_requirements: structured,
+        gml_spec: gml,
+        sla_policy: { shifts: ['A', 'B', 'C'], timezone: 'Asia/Kolkata' },
         complexity_score: structured.complexityScore,
         pricing_breakdown: pricing,
         urgency: structured.urgency,
@@ -90,7 +83,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: projectInsert.error?.message ?? 'Project creation failed' }, { status: 400 });
     }
 
-    const modulesPayload = buildModules(projectInsert.data.id);
+    await supabase.from('project_intake').upsert({ project_id: projectInsert.data.id, intake }, { onConflict: 'project_id' });
+
+    const modulesPayload = planModulesForProject(projectInsert.data.id, structured);
     const modulesInsert = await supabase
       .from('project_modules')
       .insert(modulesPayload)
@@ -102,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     const freelancers = await supabase
       .from('users')
-      .select('id, role, full_name, email, specialty_tags, skill_vector, reliability_score, availability_score, wallet_balance')
+      .select('id, role, specialty_tags, skill_vector, reliability_score, availability_score')
       .eq('role', 'freelancer')
       .is('deleted_at', null);
 
@@ -110,18 +105,39 @@ export async function POST(request: NextRequest) {
 
     if (freelancers.data) {
       for (const module of modulesInsert.data) {
-        try {
-          const match = await autoAssignTopCandidate(module as any, freelancers.data as any, async (moduleId, freelancerId) => {
-            const update = await supabase
-              .from('project_modules')
-              .update({ assigned_freelancer_id: freelancerId, module_status: 'assigned' })
-              .eq('id', moduleId);
-            if (update.error) throw update.error;
-          });
+        const plan = planAssignmentsForModule(module as any, freelancers.data as any);
+        if (plan.primaryFreelancerId) {
+          await supabase
+            .from('project_modules')
+            .update({ assigned_freelancer_id: plan.primaryFreelancerId, module_status: 'assigned' })
+            .eq('id', module.id);
 
-          if (match) assignmentMap[module.id] = 'assigned';
-        } catch {
-          // Assignment is best-effort; project creation should still succeed.
+          await supabase.from('project_module_assignments').insert([
+            {
+              module_id: module.id,
+              freelancer_id: plan.primaryFreelancerId,
+              assignment_role: 'primary',
+              shift_start: plan.shiftStart,
+              shift_end: plan.shiftEnd,
+              status: 'scheduled',
+              assignment_reason: plan.reason,
+            },
+            ...(plan.backupFreelancerId
+              ? [
+                  {
+                    module_id: module.id,
+                    freelancer_id: plan.backupFreelancerId,
+                    assignment_role: 'backup',
+                    shift_start: plan.shiftStart,
+                    shift_end: plan.shiftEnd,
+                    status: 'scheduled',
+                    assignment_reason: plan.reason,
+                  },
+                ]
+              : []),
+          ]);
+
+          assignmentMap[module.id] = 'assigned';
         }
       }
     }

@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from('users')
-    .select('id, role, full_name, email')
+    .select('id, role, full_name, email, avatar_url, bio, ui_prefs')
     .eq('auth_user_id', user.id)
     .is('deleted_at', null)
     .maybeSingle();

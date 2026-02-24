@@ -3,19 +3,77 @@
 @tailwind utilities;
 
 :root {
-  --background: 222 22% 7%;
-  --foreground: 210 20% 96%;
-  --card: 222 20% 10%;
-  --muted: 223 17% 14%;
-  --muted-foreground: 215 12% 65%;
-  --border: 223 16% 20%;
-  --primary: 213 90% 64%;
-  --primary-foreground: 222 47% 11%;
-  --accent: 221 20% 16%;
+  --font-scale: 1.1;
+  --background: 0 0% 100%;
+  --foreground: 162 69% 12%;
+  --card: 0 0% 100%;
+  --muted: 162 20% 96%;
+  --muted-foreground: 162 30% 40%;
+  --border: 162 20% 88%;
+  --primary: 162 69% 16%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 162 45% 95%;
+  --sidebar-background: 162 69% 12%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-accent: 162 69% 8%;
+  --sidebar-border: 162 69% 8%;
+}
+
+html[data-theme='starbucks'] {
+  --background: 0 0% 100%;
+  --foreground: 162 69% 12%;
+  --card: 0 0% 100%;
+  --muted: 162 20% 96%;
+  --muted-foreground: 162 30% 40%;
+  --border: 162 20% 88%;
+  --primary: 162 69% 16%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 162 45% 95%;
+  --sidebar-background: 162 69% 12%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-accent: 162 69% 8%;
+  --sidebar-border: 162 69% 8%;
+}
+
+html[data-theme='ocean'] {
+  --background: 210 40% 98%;
+  --foreground: 222 22% 12%;
+  --card: 0 0% 100%;
+  --muted: 210 30% 94%;
+  --muted-foreground: 215 14% 40%;
+  --border: 210 22% 86%;
+  --primary: 199 89% 48%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 199 70% 93%;
+  --sidebar-background: 199 89% 48%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-accent: 199 89% 40%;
+  --sidebar-border: 199 89% 40%;
+}
+
+html[data-theme='purple'] {
+  --background: 0 0% 100%;
+  --foreground: 240 10% 12%;
+  --card: 0 0% 100%;
+  --muted: 240 10% 96%;
+  --muted-foreground: 240 5% 40%;
+  --border: 240 8% 88%;
+  --primary: 262 83% 58%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 262 70% 95%;
+  --sidebar-background: 262 83% 58%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-accent: 262 83% 50%;
+  --sidebar-border: 262 83% 50%;
 }
 
 * { @apply border-border; }
 
 body {
   @apply bg-background text-foreground antialiased;
+  font-size: calc(16px * var(--font-scale));
+}
+
+* {
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }

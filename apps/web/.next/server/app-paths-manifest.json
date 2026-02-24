@@ -1,14 +1,5 @@
 {
-  "/client/page": "app/client/page.js",
-  "/projects/[id]/page": "app/projects/[id]/page.js",
-  "/projects/page": "app/projects/page.js",
-  "/page": "app/page.js",
-  "/api/auth/logout/route": "app/api/auth/logout/route.js",
-  "/api/projects/route": "app/api/projects/route.js",
-  "/login/page": "app/login/page.js",
-  "/api/auth/login/route": "app/api/auth/login/route.js",
-  "/signup/page": "app/signup/page.js",
-  "/api/auth/signup/route": "app/api/auth/signup/route.js",
-  "/freelancer/page": "app/freelancer/page.js",
-  "/api/freelancer/modules/route": "app/api/freelancer/modules/route.js"
+  "/tools/page": "app/tools/page.js",
+  "/api/auth/session/route": "app/api/auth/session/route.js",
+  "/settings/page": "app/settings/page.js"
 }

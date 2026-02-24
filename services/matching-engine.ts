@@ -24,19 +24,26 @@ export function scoreFreelancerForModule(module: ProjectModule, freelancer: User
   };
 }
 
-export function rankFreelancers(module: ProjectModule, freelancers: User[]): MatchResult[] {
+export function rankFreelancers(module: any, freelancers: any[], shiftKey: string): MatchResult[] {
   return freelancers
-    .filter((f) => f.role === 'freelancer' && f.specialty_tags.includes(module.module_key))
+    .filter((f) => {
+      const roleMatch = f.role === 'freelancer';
+      const specialtyMatch = f.specialty_tags?.includes(module.module_key);
+      // Check if freelancer is willing to work this shift
+      const shiftMatch = f.availability?.shifts?.includes(shiftKey);
+      return roleMatch && specialtyMatch && shiftMatch;
+    })
     .map((f) => scoreFreelancerForModule(module, f))
     .sort((a, b) => b.score - a.score);
 }
 
 export async function autoAssignTopCandidate(
-  module: ProjectModule,
-  freelancers: User[],
+  module: any,
+  freelancers: any[],
+  shiftKey: string,
   assigner: (moduleId: string, freelancerId: string) => Promise<void>,
 ): Promise<MatchResult | null> {
-  const ranked = rankFreelancers(module, freelancers);
+  const ranked = rankFreelancers(module, freelancers, shiftKey);
   const top = ranked[0];
   if (!top) return null;
   await assigner(module.id, top.freelancerId);

@@ -1,0 +1,51 @@
+export interface PlannedModule {
+  module_key: string;
+  module_name: string;
+  module_type: string;
+  module_weight: number;
+  required_skills_vector: Record<string, number>;
+  definition_of_done: Record<string, unknown>;
+}
+
+export function planModulesForProject(projectId: string, structured: any): Array<Record<string, any>> {
+  const base = [
+    {
+      project_id: projectId,
+      module_key: 'frontend',
+      module_name: 'Frontend',
+      module_type: 'frontend',
+      module_weight: 0.25,
+      required_skills_vector: { react: 0.9, ui: 0.8 },
+      definition_of_done: { checklist: ['Client UI', 'Auth', 'Dashboards'] },
+    },
+    {
+      project_id: projectId,
+      module_key: 'backend',
+      module_name: 'Backend',
+      module_type: 'backend',
+      module_weight: 0.35,
+      required_skills_vector: { node: 0.9, postgres: 0.8, rls: 0.8 },
+      definition_of_done: { checklist: ['APIs', 'RLS', 'Realtime'] },
+    },
+    {
+      project_id: projectId,
+      module_key: 'integrations',
+      module_name: 'Integrations',
+      module_type: 'integrations',
+      module_weight: 0.25,
+      required_skills_vector: { integrations: 0.8, webhooks: 0.6 },
+      definition_of_done: { integrations: structured.integrations ?? [] },
+    },
+    {
+      project_id: projectId,
+      module_key: 'deployment',
+      module_name: 'Deployment',
+      module_type: 'deployment',
+      module_weight: 0.15,
+      required_skills_vector: { devops: 0.7, deployment: 0.9 },
+      definition_of_done: { checklist: ['AiroBuilder deployment URL', 'Handover notes'] },
+    },
+  ];
+
+  return base;
+}

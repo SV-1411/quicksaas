@@ -21,7 +21,12 @@ const config: Config = {
         border: 'hsl(var(--border))',
         primary: 'hsl(var(--primary))',
         'primary-foreground': 'hsl(var(--primary-foreground))',
-        accent: 'hsl(var(--accent))',
+        sidebar: {
+          background: 'hsl(var(--sidebar-background))',
+          foreground: 'hsl(var(--sidebar-foreground))',
+          accent: 'hsl(var(--sidebar-accent))',
+          border: 'hsl(var(--sidebar-border))',
+        },
       },
       borderRadius: {
         xl: '1rem',

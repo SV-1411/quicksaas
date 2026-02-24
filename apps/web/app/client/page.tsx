@@ -11,6 +11,7 @@ import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Modal } from '../../components/ui/modal';
+import IntakeForm from '../../components/project/intake-form';
 import { useToast } from '../../lib/hooks/use-toast';
 
 export default function ClientDashboard() {
@@ -75,13 +76,8 @@ export default function ClientDashboard() {
               <p className="text-lg font-semibold">Project pipeline</p>
               <p className="text-sm text-muted-foreground">Execution visibility across all modules.</p>
             </div>
-            <Modal trigger={<Button>Create Project</Button>} title="Create New Project">
-              <form className="space-y-3" onSubmit={onCreate}>
-                <input className="w-full rounded-lg border bg-background p-2.5" placeholder="Project title" value={title} onChange={(e) => setTitle(e.target.value)} />
-                <textarea className="min-h-36 w-full rounded-lg border bg-background p-2.5" placeholder="Describe business requirement" value={requirement} onChange={(e) => setRequirement(e.target.value)} />
-                <div className="rounded-lg border bg-background p-3 text-sm text-muted-foreground">Price preview: <span className="font-medium text-foreground">₹{preview.total.toLocaleString()}</span></div>
-                <Button className="w-full" disabled={loading}>{loading ? 'Creating...' : 'Create and launch execution'}</Button>
-              </form>
+            <Modal trigger={<Button>Create Project</Button>} title="Launch New Project">
+              <IntakeForm />
             </Modal>
           </div>
           <div className="overflow-x-auto">

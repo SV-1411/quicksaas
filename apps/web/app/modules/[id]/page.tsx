@@ -1,93 +1,221 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
-import { Rocket } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
 import { createSupabaseBrowserClient } from '../../../lib/supabase/browser';
 import { AppShell } from '../../../components/layout/app-shell';
 import { Card } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
+import { Skeleton } from '../../../components/ui/skeleton';
 import { useToast } from '../../../lib/hooks/use-toast';
+import { History, FileCode, Play, Terminal, ChevronRight } from 'lucide-react';
+import ShiftCheckout from '../../../components/freelancer/shift-checkout';
+import { Modal } from '../../../components/ui/modal';
+import AiroBuilderWorkspace from '../../../components/freelancer/airobuilder-workspace';
 
-interface Snapshot { id: string; version_no: number; work_summary: string; created_at: string; }
+interface ModuleItem { 
+  id: string; 
+  module_name: string; 
+  module_status: string; 
+  definition_of_done?: any; 
+  project_id: string; 
+  shift?: {
+    status: string;
+    role: string;
+    shift_start: string;
+    shift_end: string;
+  };
+  snapshots?: Snapshot[];
+  airobuilder_session?: any;
+}
+
+interface Snapshot { 
+  id: string; 
+  module_id: string; 
+  snapshot_type: string; 
+  public_summary: string; 
+  internal_summary: string; 
+  created_at: string; 
+}
 
 export default function ModuleDetailPage({ params }: { params: { id: string } }) {
   const supabase = createSupabaseBrowserClient();
   const { show } = useToast();
-  const [summary, setSummary] = useState('');
+  
+  const [module, setModule] = useState<ModuleItem | null>(null);
+  const [assignment, setAssignment] = useState<any>(null);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  async function loadSnapshots() {
-    const { data } = await supabase.from('module_snapshots').select('id, version_no, work_summary, created_at').eq('module_id', params.id).order('version_no', { ascending: false });
-    setSnapshots((data ?? []) as Snapshot[]);
-  }
-
-  async function submitSnapshot(event: FormEvent) {
-    event.preventDefault();
-    setLoading(true);
-    const session = await supabase.auth.getSession();
-    const token = session.data.session?.access_token;
+  async function load() {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
     if (!token) return;
-    const res = await fetch(`/api/modules/${params.id}/snapshot`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ workSummary: summary, structuredProgressJson: { note: summary }, fileReferences: [], timeSpentMinutes: 60, completionPercentage: 0.2, aiQualityScore: 0.9, penalties: 0 }) });
-    const payload = await res.json();
-    setLoading(false);
-    if (!res.ok) return show('Submission failed', payload.error);
-    setSummary('');
-    show('Snapshot submitted', `Version ${payload.snapshot.versionNo} saved`);
-    await loadSnapshots();
-  }
 
-  async function launchAiroBuilder() {
-    const session = await supabase.auth.getSession();
-    const token = session.data.session?.access_token;
-    if (!token) return;
-    const res = await fetch('/api/airobuilder/create-session', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ moduleId: params.id, projectContext: { source: 'workspace' } }) });
-    const payload = await res.json();
-    if (!res.ok) return show('Launch failed', payload.error);
-    show('AiroBuilder ready', 'Build session created');
-    if (payload.session?.buildUrl) window.open(payload.session.buildUrl, '_blank');
+    try {
+      const res = await fetch('/api/freelancer/modules', { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      const payload = await res.json();
+      const currentModule = payload.modules?.find((m: any) => m.id === params.id);
+      
+      if (!currentModule) {
+        setLoading(false);
+        return;
+      }
+
+      setModule(currentModule);
+      setAssignment(currentModule.shift);
+      setSnapshots(currentModule.snapshots ?? []);
+    } catch (err) {
+      console.error('Failed to load module:', err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    loadSnapshots();
-    const channel = supabase.channel(`snapshots-${params.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'module_snapshots', filter: `module_id=eq.${params.id}` }, loadSnapshots).subscribe();
-    return () => void supabase.removeChannel(channel);
+    load();
+    const channel = supabase.channel(`module-${params.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_modules', filter: `id=eq.${params.id}` }, () => load())
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [params.id]);
+
+  const onCheckIn = async () => {
+    setActionLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/freelancer/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ moduleId: params.id })
+      });
+      if (!res.ok) throw new Error('Check-in failed');
+      show('Success', 'Shift started. Good luck!');
+      load();
+    } catch (err: any) {
+      show('Error', err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) return <AppShell role="freelancer" title="Module Workspace"><Skeleton className="h-80 w-full" /></AppShell>;
+  if (!module) return <AppShell role="freelancer" title="Module Workspace"><p className="p-8 text-center text-muted-foreground">Module not found.</p></AppShell>;
 
   return (
     <AppShell role="freelancer" title="Module Workspace">
-      <div className="grid gap-6 lg:grid-cols-[300px,1fr]">
-        <Card className="p-4">
-          <p className="mb-3 font-semibold">Snapshot history</p>
-          <div className="space-y-2">
-            {snapshots.map((snapshot) => (
-              <div key={snapshot.id} className="rounded-lg border p-3">
-                <div className="flex items-center justify-between"><p className="text-sm font-medium">v{snapshot.version_no}</p><Badge>{new Date(snapshot.created_at).toLocaleDateString()}</Badge></div>
-                <p className="mt-1 text-xs text-muted-foreground">{snapshot.work_summary}</p>
-              </div>
-            ))}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">{module.module_name}</h2>
+            <p className="text-sm text-muted-foreground mt-1">Project ID: {module.project_id}</p>
           </div>
-        </Card>
+          <div className="flex gap-3">
+            {assignment?.status === 'scheduled' && (
+              <Button onClick={onCheckIn} disabled={actionLoading} className="bg-emerald-600 hover:bg-emerald-700">
+                <Play className="mr-2 h-4 w-4" /> Start Shift
+              </Button>
+            )}
+            {assignment?.status === 'active' && (
+              <Modal trigger={<Button className="bg-blue-600 hover:bg-blue-700">Check-out / Handoff</Button>} title="Complete Shift & Handoff">
+                <ShiftCheckout moduleId={params.id} onSuccess={() => load()} />
+              </Modal>
+            )}
+          </div>
+        </div>
 
-        <div className="space-y-6">
-          <Card className="p-6">
-            <div className="mb-4 flex items-center justify-between"><p className="font-semibold">Work submission</p><Button variant="outline" onClick={launchAiroBuilder}><Rocket className="mr-2 h-4 w-4" />Launch AiroBuilder</Button></div>
-            <form className="space-y-3" onSubmit={submitSnapshot}>
-              <textarea className="min-h-40 w-full rounded-lg border bg-background p-3" value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="Describe completed work, blockers, and handoff notes." />
-              <Button disabled={loading}>{loading ? 'Submitting...' : 'Submit Snapshot'}</Button>
-            </form>
-          </Card>
-          <Card className="p-6">
-            <p className="font-semibold">Contribution summary</p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-3">
-              <div><p className="text-xs text-muted-foreground">Module Status</p><p className="mt-1 font-medium">In Progress</p></div>
-              <div><p className="text-xs text-muted-foreground">Estimated Payout</p><p className="mt-1 font-medium">₹18,200</p></div>
-              <div><p className="text-xs text-muted-foreground">Quality Trend</p><p className="mt-1 font-medium">0.91</p></div>
-            </div>
-          </Card>
+        <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+          <div className="space-y-6">
+            {assignment?.status === 'active' && (
+              <AiroBuilderWorkspace 
+                moduleId={params.id} 
+                initialSession={module.airobuilder_session} 
+              />
+            )}
+
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Terminal className="h-5 w-5 text-primary" />
+                <p className="font-semibold">Definition of Done (GML Spec)</p>
+              </div>
+              <div className="space-y-3">
+                {module.definition_of_done?.checklist?.map((item: string, i: number) => (
+                  <div key={i} className="flex items-start gap-3 p-3 rounded-lg border bg-card/50">
+                    <div className="mt-0.5 h-4 w-4 rounded-full border border-primary flex items-center justify-center">
+                      <div className="h-2 w-2 rounded-full bg-primary opacity-0" />
+                    </div>
+                    <span className="text-sm">{item}</span>
+                  </div>
+                ))}
+                {(!module.definition_of_done?.checklist || module.definition_of_done.checklist.length === 0) && (
+                  <p className="text-sm text-muted-foreground italic">No checklist items defined.</p>
+                )}
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <History className="h-5 w-5 text-primary" />
+                <p className="font-semibold">Shift History & Handoffs</p>
+              </div>
+              <div className="space-y-4">
+                {snapshots.length === 0 ? (
+                  <p className="text-sm text-muted-foreground italic text-center py-4">No prior snapshots for this module.</p>
+                ) : (
+                  snapshots.map((s: any) => (
+                    <div key={s.id} className="p-4 rounded-lg border bg-card/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="outline" className="capitalize">{s.snapshot_type.replace('_', ' ')}</Badge>
+                        <span className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleString()}</span>
+                      </div>
+                      <p className="text-sm font-medium">{s.public_summary}</p>
+                      {s.internal_summary && <p className="mt-2 text-xs text-muted-foreground bg-muted p-2 rounded leading-relaxed">{s.internal_summary}</p>}
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card className="p-6">
+              <p className="text-sm font-medium mb-4">Shift Context</p>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Your Role</p>
+                  <Badge className="capitalize">{assignment?.role || 'Contributor'}</Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Window</p>
+                  <p className="text-sm font-medium">
+                    {assignment?.shift_start ? new Date(assignment.shift_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'} – 
+                    {assignment?.shift_end ? new Date(assignment.shift_end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Status</p>
+                  <Badge variant="outline" className={`capitalize ${assignment?.status === 'active' ? 'animate-pulse' : ''}`}>{assignment?.status || 'None'}</Badge>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4 bg-primary/5 border-primary/20">
+              <p className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+                <ChevronRight className="h-4 w-4" /> Continuity Note
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Your progress will be synced in real-time. Ensure you provide clear internal notes for the next freelancer in the shift relay.
+              </p>
+            </Card>
+          </div>
         </div>
       </div>
     </AppShell>
   );
 }
+
