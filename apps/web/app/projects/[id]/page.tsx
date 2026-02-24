@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { createSupabaseBrowserClient } from '../../../lib/supabase/browser';
 import { AppShell } from '../../../components/layout/app-shell';
 import { Card } from '../../../components/ui/card';
@@ -9,11 +9,13 @@ import { Badge } from '../../../components/ui/badge';
 import { Skeleton } from '../../../components/ui/skeleton';
 
 interface ModuleItem { id: string; module_name: string; module_status: string; }
+interface SessionItem { id: string; module_id: string; deployment_url: string; build_url: string; session_status: string; }
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const supabase = createSupabaseBrowserClient();
   const [project, setProject] = useState<any>(null);
   const [modules, setModules] = useState<ModuleItem[]>([]);
+  const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -21,19 +23,43 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     const token = session.data.session?.access_token;
     if (!token) return;
     const res = await fetch(`/api/projects/${params.id}`, { headers: { Authorization: `Bearer ${token}` } });
-    const payload = await res.json();
+    const raw = await res.text();
+    const payload = raw ? (JSON.parse(raw) as any) : {};
+    
+    if (!res.ok) {
+      setLoading(false);
+      return;
+    }
+
     setProject(payload.project);
     setModules(payload.modules ?? []);
+    setSessions(payload.sessions ?? []);
     setLoading(false);
   }
 
   useEffect(() => {
     load();
-    const channel = supabase.channel(`project-${params.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'project_modules', filter: `project_id=eq.${params.id}` }, load).subscribe();
-    return () => void supabase.removeChannel(channel);
+    
+    const moduleChannel = supabase.channel(`project-modules-${params.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_modules', filter: `project_id=eq.${params.id}` }, load)
+      .subscribe();
+
+    const projectChannel = supabase.channel(`project-status-${params.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `id=eq.${params.id}` }, load)
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(moduleChannel);
+      void supabase.removeChannel(projectChannel);
+    };
   }, [params.id]);
 
   const completion = modules.length ? Math.round((modules.filter((m) => m.module_status === 'completed').length / modules.length) * 100) : 0;
+
+  const latestDeploymentUrl = useMemo(() => {
+    const readySession = sessions.find(s => s.deployment_url && (s.session_status === 'ready' || s.session_status === 'deployed'));
+    return readySession?.deployment_url || null;
+  }, [sessions]);
 
   return (
     <AppShell role="client" title="Project Detail">
@@ -66,7 +92,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             </Card>
             <Card className="p-4">
               <p className="mb-3 text-sm font-medium">Deployment preview</p>
-              <iframe className="h-[360px] w-full rounded-lg border border-border bg-muted" srcDoc="<html><body style='background:#0f1118;color:#d6d8df;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100%'>Deployment preview will appear here</body></html>" />
+              {latestDeploymentUrl ? (
+                <iframe className="h-[360px] w-full rounded-lg border border-border bg-white" src={latestDeploymentUrl} />
+              ) : (
+                <div className="flex h-[360px] w-full flex-col items-center justify-center rounded-lg border border-border bg-muted text-center p-6">
+                  <p className="text-sm text-muted-foreground">Deployment preview will appear here</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Waiting for modules to be completed...</p>
+                </div>
+              )}
             </Card>
           </div>
         </div>

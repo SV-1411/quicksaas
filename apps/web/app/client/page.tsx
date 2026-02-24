@@ -33,7 +33,8 @@ export default function ClientDashboard() {
     const accessToken = session.data.session?.access_token;
     if (!accessToken) return;
     const response = await fetch('/api/projects/create', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ title, rawRequirement: requirement }) });
-    const payload = await response.json();
+    const raw = await response.text();
+    const payload = raw ? (JSON.parse(raw) as any) : {};
     setLoading(false);
     if (!response.ok) return show('Project creation failed', payload.error);
     show('Project created', 'Execution modules initialized.');

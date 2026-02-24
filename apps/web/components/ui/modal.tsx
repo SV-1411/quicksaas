@@ -14,6 +14,7 @@ export function Modal({ trigger, title, children }: { trigger: React.ReactNode; 
             <Dialog.Title className="text-lg font-semibold">{title}</Dialog.Title>
             <Dialog.Close className="rounded p-1 hover:bg-accent"><X className="h-4 w-4" /></Dialog.Close>
           </div>
+          <Dialog.Description className="sr-only">{title}</Dialog.Description>
           {children}
         </Dialog.Content>
       </Dialog.Portal>

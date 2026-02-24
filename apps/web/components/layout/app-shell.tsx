@@ -8,14 +8,19 @@ import * as Avatar from '@radix-ui/react-avatar';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
 
+const roleHome = {
+  client: '/client',
+  freelancer: '/freelancer',
+  admin: '/admin',
+} as const;
+
 const navByRole = {
   client: [
     { href: '/client', label: 'Overview' },
-    { href: '/projects/demo', label: 'Projects' },
+    { href: '/projects', label: 'Projects' },
   ],
   freelancer: [
     { href: '/freelancer', label: 'Workspace' },
-    { href: '/modules/demo', label: 'Snapshots' },
   ],
   admin: [
     { href: '/admin', label: 'Control Center' },
@@ -52,14 +57,22 @@ export function AppShell({ role, title, children }: { role: 'client' | 'freelanc
                   <span className="text-xs text-muted-foreground">{role}</span>
                 </button>
               </DropdownMenu.Trigger>
-              <DropdownMenu.Content className="mr-4 rounded-lg border border-border bg-card p-1">
+              <DropdownMenu.Content className="mr-4 w-40 rounded-lg border border-border bg-card p-1 shadow-md">
                 <DropdownMenu.Item asChild>
-                  <Link className="block rounded px-3 py-2 text-sm hover:bg-accent" href="/">Home</Link>
+                  <Link className="block rounded px-3 py-2 text-sm hover:bg-accent" href={roleHome[role]}>Home</Link>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item asChild>
-                  <form action="/api/auth/logout" method="post">
-                    <Button variant="ghost" size="sm" className="w-full justify-start">Logout</Button>
-                  </form>
+                  <button 
+                    className="flex w-full cursor-pointer items-center rounded px-3 py-2 text-sm text-red-400 hover:bg-red-400/10"
+                    onClick={async () => {
+                      const res = await fetch('/api/auth/logout', { method: 'POST' });
+                      if (res.ok) {
+                        window.location.href = '/login';
+                      }
+                    }}
+                  >
+                    Logout
+                  </button>
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
