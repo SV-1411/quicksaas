@@ -1,5 +1,7 @@
 {
-  "/tools/page": "app/tools/page.js",
-  "/api/auth/session/route": "app/api/auth/session/route.js",
-  "/settings/page": "app/settings/page.js"
+  "/_not-found/page": "app/_not-found/page.js",
+  "/signup/page": "app/signup/page.js",
+  "/page": "app/page.js",
+  "/login/page": "app/login/page.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js"
 }
