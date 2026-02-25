@@ -384,7 +384,7 @@ export default function HomePage() {
         </section>
 
         {/* Interactive Footer */}
-        <footer className="border-t border-gray-200 bg-white">
+        <footer className="relative z-50 border-t border-gray-200 bg-white">
           <div className="container py-12">
             <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
               <div>
