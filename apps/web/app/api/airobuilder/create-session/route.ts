@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServiceClient } from '../../../lib/supabase/server';
-import { AiroBuilderService } from '../../../../../services/airobuilder-service';
+import { createSupabaseServiceClient } from '../../../../lib/supabase/server';
+import { AiroBuilderService } from '@services/airobuilder-service';
 
 export async function POST(request: NextRequest) {
   try {

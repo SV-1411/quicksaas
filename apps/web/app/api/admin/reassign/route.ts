@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rankFreelancers } from '../../../../../../services/matching-engine';
+import { rankFreelancers } from '@services/matching-engine';
 import { createSupabaseServiceClient } from '../../../../lib/supabase/server';
 
 export async function POST(request: NextRequest) {
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     .eq('role', 'freelancer')
     .is('deleted_at', null);
 
-  const ranked = rankFreelancers(moduleRes.data as any, freelancers.data as any);
+  const ranked = rankFreelancers(moduleRes.data as any, freelancers.data as any, 'default');
   const target = ranked.find((item) => item.freelancerId !== moduleRes.data.assigned_freelancer_id);
   if (!target) return NextResponse.json({ error: 'No replacement freelancer available' }, { status: 400 });
 

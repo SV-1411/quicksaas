@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServiceClient } from '../../../../lib/supabase/server';
-import { computePenalty } from '../../../../../../services/penalty-engine';
+import { computePenalty } from '@services/penalty-engine';
 
 export async function POST(request: NextRequest) {
   try {

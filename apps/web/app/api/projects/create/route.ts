@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { calculateDynamicPrice } from '../../../../../../services/pricing-engine';
+import { calculateDynamicPrice } from '@services/pricing-engine';
 import { createSupabaseServiceClient } from '../../../../lib/supabase/server';
-import { validateIntake, intakeToStructuredRequirements, structuredToGml } from '../../../../../../services/intake-mapper';
-import { planModulesForProject } from '../../../../../../services/module-planner';
-import { planAssignmentsForModule } from '../../../../../../services/assignment-engine';
+import { validateIntake, intakeToStructuredRequirements, structuredToGml } from '@services/intake-mapper';
+import { planModulesForProject } from '@services/module-planner';
+import { planAssignmentsForModule } from '@services/assignment-engine';
 
 interface CreateProjectBody {
   title: string;

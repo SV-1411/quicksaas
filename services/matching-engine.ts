@@ -30,7 +30,7 @@ export function rankFreelancers(module: any, freelancers: any[], shiftKey: strin
       const roleMatch = f.role === 'freelancer';
       const specialtyMatch = f.specialty_tags?.includes(module.module_key);
       // Check if freelancer is willing to work this shift
-      const shiftMatch = f.availability?.shifts?.includes(shiftKey);
+      const shiftMatch = !f.availability?.shifts || f.availability.shifts.includes(shiftKey);
       return roleMatch && specialtyMatch && shiftMatch;
     })
     .map((f) => scoreFreelancerForModule(module, f))

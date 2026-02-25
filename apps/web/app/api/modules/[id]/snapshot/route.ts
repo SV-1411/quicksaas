@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSnapshot } from '../../../../../../../services/snapshot-engine';
-import { calculatePayout } from '../../../../../../../services/contribution-engine';
+import { createSnapshot } from '@services/snapshot-engine';
+import { calculatePayout } from '@services/contribution-engine';
 import { createSupabaseServiceClient } from '../../../../../lib/supabase/server';
 
 interface SnapshotBody {
