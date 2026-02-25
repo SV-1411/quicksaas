@@ -114,7 +114,7 @@ export default function HomePage() {
   }, []);
 
   // Magnetic effect for interactive elements
-  const handleMagneticMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMagneticMove = useCallback((e: React.MouseEvent<HTMLElement>) => {
     const target = e.currentTarget;
     const rect = target.getBoundingClientRect();
     const x = e.clientX - rect.left - rect.width / 2;
@@ -123,7 +123,7 @@ export default function HomePage() {
     target.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
   }, []);
 
-  const handleMagneticLeave = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMagneticLeave = useCallback((e: React.MouseEvent<HTMLElement>) => {
     e.currentTarget.style.transform = 'translate(0, 0)';
   }, []);
 

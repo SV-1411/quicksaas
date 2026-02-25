@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Brain, Zap } from 'lucide-react';
 import { AppShell } from '../../../components/layout/app-shell';
 import { Card } from '../../../components/ui/card';
 import { createSupabaseBrowserClient } from '../../../lib/supabase/browser';
@@ -72,10 +74,45 @@ export default function AiroBuilderToolsPage() {
             ))}
           </div>
         ) : (
-          <Card className="p-12 bg-white border-border shadow-md text-center">
-            <p className="text-lg font-bold text-muted-foreground">No active assignments found.</p>
-            <p className="text-sm text-muted-foreground mt-1">Modules will appear here once they are assigned to your shift.</p>
-          </Card>
+          <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-slate-950 p-16 text-center shadow-2xl">
+            {/* Background Neural Grid */}
+            <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(16,185,129,0.05),transparent_70%)]" />
+            
+            <div className="relative z-10 flex flex-col items-center">
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.05, 1],
+                  rotate: [0, 5, -5, 0]
+                }}
+                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                className="mb-8 flex h-24 w-24 items-center justify-center rounded-3xl bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.1)]"
+              >
+                <Brain className="h-12 w-12 text-emerald-400" />
+              </motion.div>
+              
+              <h3 className="text-3xl font-black tracking-tight text-white mb-4 uppercase italic">
+                AI Builder <span className="text-emerald-500">Synchronizing</span>
+              </h3>
+              <p className="text-emerald-500/60 max-w-sm mx-auto mb-10 font-mono text-xs uppercase tracking-[0.3em] leading-relaxed">
+                The GoDaddy-powered neural engine is active. Your assignments will manifest here once the match engine completes orchestration.
+              </p>
+              
+              <div className="flex gap-4 justify-center">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/5 border border-emerald-500/10 text-[10px] text-emerald-400/70 font-mono uppercase">
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+                  Orchestrator Online
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/5 border border-blue-500/10 text-[10px] text-blue-400/70 font-mono uppercase">
+                  <Zap className="h-3 w-3" />
+                  Neural Link Ready
+                </div>
+              </div>
+            </div>
+            
+            {/* Scanning line */}
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-emerald-500/5 to-transparent h-20 w-full animate-wave opacity-30" style={{ animationDuration: '5s' }} />
+          </div>
         )}
       </div>
     </AppShell>
