@@ -199,7 +199,7 @@ export default function HomePage() {
               
               <h1 className="max-w-6xl mx-auto mb-16">
                 <div className="title-elegant text-6xl md:text-8xl lg:text-9xl mb-24">
-                  Ship Digital Products
+                  <span className="font-black">Ship Digital Products</span>
                 </div>
                 <div className="subtitle-elegant text-2xl md:text-4xl lg:text-5xl text-gray-800 font-light bg-transparent">
                   With Enterprise Reliability
@@ -215,7 +215,7 @@ export default function HomePage() {
               
               <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16 animate-slide-up animate-delay-300">
                 <Link href="/login">
-                  <button className="btn-premium text-gray-900 text-lg font-medium inline-flex items-center gap-3 interactive magnetic" 
+                  <button className="btn-premium text-white text-xl font-black inline-flex items-center gap-3 interactive magnetic border border-black/10 shadow-2xl shadow-emerald-900/15 bg-gradient-to-r from-emerald-800 via-green-700 to-emerald-600 hover:brightness-110 px-10 py-5 rounded-2xl" 
                     onMouseMove={handleMagneticMove}
                     onMouseLeave={handleMagneticLeave}>
                     Get Started 
@@ -223,7 +223,7 @@ export default function HomePage() {
                   </button>
                 </Link>
                 <Link href="/signup">
-                  <button className="btn-premium-outline text-gray-900 text-lg font-medium inline-flex items-center gap-3 interactive magnetic"
+                  <button className="btn-premium-outline text-gray-900 text-xl font-black inline-flex items-center gap-3 interactive magnetic border-2 border-black bg-white/70 backdrop-blur hover:bg-white shadow-xl shadow-black/10 px-10 py-5 rounded-2xl"
                     onMouseMove={handleMagneticMove}
                     onMouseLeave={handleMagneticLeave}>
                     <Play className="w-5 h-5" />
@@ -318,9 +318,9 @@ export default function HomePage() {
             
             <div className="grid md:grid-cols-3 gap-8">
               {[
-                { step: '01', title: 'Submit Requirements', desc: 'Share your vision with our AI-powered intake system', icon: MousePointer },
-                { step: '02', title: 'Auto-Orchestrated Execution', desc: 'Watch as AI matches and orchestrates the perfect team', icon: Cpu },
-                { step: '03', title: 'Continuous Visibility', desc: 'Track progress in real-time with transparent workflows', icon: BarChart3 },
+                { step: '01', title: 'Submit Requirements', desc: 'Share your vision with our AI-powered intake system', icon: MousePointer, svg: '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#059669"/><stop offset="1" stop-color="#10b981"/></linearGradient></defs><rect width="640" height="420" rx="28" fill="#ffffff"/><rect x="40" y="48" width="560" height="324" rx="22" fill="#ecfdf5" stroke="#059669" stroke-width="3"/><rect x="80" y="98" width="320" height="26" rx="13" fill="url(#g)" opacity="0.95"/><rect x="80" y="146" width="420" height="18" rx="9" fill="#059669" opacity="0.25"/><rect x="80" y="178" width="380" height="18" rx="9" fill="#059669" opacity="0.18"/><rect x="80" y="210" width="340" height="18" rx="9" fill="#059669" opacity="0.12"/><circle cx="520" cy="260" r="54" fill="url(#g)" opacity="0.18"/><path d="M492 266l18 18 42-52" fill="none" stroke="#059669" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+                { step: '02', title: 'Auto-Orchestrated Execution', desc: 'Watch as AI matches and orchestrates the perfect team', icon: Cpu, svg: '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#047857"/><stop offset="1" stop-color="#059669"/></linearGradient></defs><rect width="640" height="420" rx="28" fill="#ffffff"/><rect x="60" y="70" width="520" height="280" rx="26" fill="#f0fdfa" stroke="#047857" stroke-width="3"/><rect x="120" y="130" width="160" height="160" rx="22" fill="url(#g)" opacity="0.16"/><rect x="320" y="130" width="200" height="34" rx="17" fill="url(#g)" opacity="0.9"/><rect x="320" y="186" width="240" height="18" rx="9" fill="#047857" opacity="0.22"/><rect x="320" y="218" width="210" height="18" rx="9" fill="#047857" opacity="0.16"/><rect x="320" y="250" width="180" height="18" rx="9" fill="#047857" opacity="0.12"/><path d="M146 212h108" stroke="#047857" stroke-width="10" stroke-linecap="round" opacity="0.35"/><path d="M200 158v108" stroke="#047857" stroke-width="10" stroke-linecap="round" opacity="0.25"/><circle cx="520" cy="294" r="34" fill="url(#g)" opacity="0.18"/><path d="M506 295l9 9 22-27" fill="none" stroke="#047857" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+                { step: '03', title: 'Continuous Visibility', desc: 'Track progress in real-time with transparent workflows', icon: BarChart3, svg: '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#10b981"/><stop offset="1" stop-color="#059669"/></linearGradient></defs><rect width="640" height="420" rx="28" fill="#ffffff"/><rect x="40" y="60" width="560" height="300" rx="26" fill="#ecfdf5" stroke="#059669" stroke-width="3"/><path d="M100 300h440" stroke="#059669" stroke-width="4" opacity="0.25"/><rect x="130" y="214" width="44" height="86" rx="10" fill="url(#g)" opacity="0.85"/><rect x="210" y="182" width="44" height="118" rx="10" fill="url(#g)" opacity="0.7"/><rect x="290" y="152" width="44" height="148" rx="10" fill="url(#g)" opacity="0.6"/><rect x="370" y="126" width="44" height="174" rx="10" fill="url(#g)" opacity="0.75"/><rect x="450" y="196" width="44" height="104" rx="10" fill="url(#g)" opacity="0.55"/><path d="M120 156c40 30 70 10 110 34 38 24 74-24 110-4 38 20 70 54 140 18" fill="none" stroke="#059669" stroke-width="6" stroke-linecap="round" opacity="0.35"/><circle cx="520" cy="136" r="40" fill="url(#g)" opacity="0.16"/><path d="M502 140l13 13 30-37" fill="none" stroke="#059669" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
               ].map((item, index) => (
                 <div 
                   key={item.step} 
@@ -328,8 +328,19 @@ export default function HomePage() {
                   onMouseMove={handleMagneticMove}
                   onMouseLeave={handleMagneticLeave}
                 >
+                  <div className="mx-auto mb-8 max-w-sm overflow-hidden rounded-2xl border border-green-700/10 bg-white shadow-xl shadow-green-900/5">
+                    <div
+                      className="h-52 w-full overflow-hidden"
+                      dangerouslySetInnerHTML={{
+                        __html: item.svg.replace(
+                          '<svg ',
+                          '<svg preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block" '
+                        ),
+                      }}
+                    />
+                  </div>
                   <div className="relative mb-8 inline-block">
-                    <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white text-3xl font-black shadow-lg hover-glow interactive">
+                    <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-green-700 text-3xl font-black shadow-lg hover-glow interactive border border-green-700/20">
                       {item.step}
                     </div>
                     <div className="absolute -top-2 -right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md animate-bounce-in">
@@ -373,14 +384,54 @@ export default function HomePage() {
         </section>
 
         {/* Interactive Footer */}
-        <footer className="border-t border-gray-200 py-12 text-center">
-          <div className="container">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <Globe className="w-6 h-6 text-green-600" />
-              <span className="text-xl font-semibold text-gray-900 bg-transparent">Gigzs</span>
+        <footer className="border-t border-gray-200 bg-white">
+          <div className="container py-12">
+            <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
+              <div>
+                <p className="text-green-700 font-semibold mb-4">Join our Newsletter</p>
+                <div className="flex flex-col gap-3 max-w-xs">
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    className="h-11 rounded-md border border-gray-300 px-4 text-sm outline-none focus:ring-2 focus:ring-green-600/30"
+                  />
+                  <button className="h-11 rounded-md bg-green-700 text-white font-semibold hover:bg-green-800 transition-colors">
+                    Subscribe
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-green-700 font-semibold mb-4">Quick Links</p>
+                <div className="flex flex-col gap-2 text-sm text-gray-700">
+                  <Link href="/" className="hover:text-green-700">About Us</Link>
+                  <Link href="/#features" className="hover:text-green-700">Features</Link>
+                  <Link href="/#how-it-works" className="hover:text-green-700">How It Works</Link>
+                  <Link href="/#contact" className="hover:text-green-700">Contact</Link>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-green-700 font-semibold mb-4">Location</p>
+                <div className="flex flex-col gap-2 text-sm text-gray-700">
+                  <p>House no 108 Pachkedhi Gandhi</p>
+                  <p>Pachkedhi Kuhi,</p>
+                  <p>Nagpur, Maharashtra</p>
+                  <p>PIN: 441210</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-green-700 font-semibold mb-4">Contact</p>
+                <div className="flex flex-col gap-2 text-sm text-gray-700">
+                  <a href="mailto:info@GIGZS.com" className="hover:text-green-700">info@GIGZS.com</a>
+                </div>
+              </div>
             </div>
-            <p className="text-gray-600 mb-2 bg-transparent">Managed digital execution platform</p>
-            <p className="text-sm text-gray-500 bg-transparent">© {new Date().getFullYear()} Gigzs. All rights reserved.</p>
+
+            <div className="mt-10 border-t border-gray-200 pt-6 text-center text-xs text-gray-500">
+              {new Date().getFullYear()} <span className="text-green-700">GIGZS pvt ltd.</span> All rights reserved.
+            </div>
           </div>
         </footer>
       </main>
