@@ -6,10 +6,18 @@ export function requireEnv(name: string): string {
   return value;
 }
 
+// .env.local uses API_URL / ANON_KEY / SERVICE_ROLE_KEY (no NEXT_PUBLIC_ prefix for local dev)
 export const env = {
-  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://127.0.0.1:54321',
+  supabaseUrl:
+    process.env.NEXT_PUBLIC_SUPABASE_URL ??
+    process.env.API_URL ??
+    'http://127.0.0.1:54321',
   supabaseAnonKey:
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder.placeholder',
-  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
+    process.env.ANON_KEY ??
+    '',
+  supabaseServiceRoleKey:
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.SERVICE_ROLE_KEY ??
+    '',
 };

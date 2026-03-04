@@ -1,440 +1,449 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Building2, CheckCircle2, Layers3, ShieldCheck, Zap, Sparkles, Rocket, Globe, Users, Code2, Cpu, BarChart3, Star, ArrowDown, MousePointer, Play, Pause, Volume2 } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card';
+import { ArrowRight, RotateCcw, EyeOff, Activity } from 'lucide-react';
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { motion, useScroll, useTransform, useInView, useMotionValue, useSpring } from 'framer-motion';
 
-const tiers = [
-  { name: 'Growth', price: '₹1.5L+', desc: 'For fast-moving SMB execution pods.', features: ['AI-powered matching', 'Managed delivery', 'Quality scoring'] },
-  { name: 'Scale', price: '₹6L+', desc: 'For multi-team product execution with governance.', features: ['Multi-team orchestration', 'Advanced analytics', 'Custom workflows'] },
-  { name: 'Enterprise', price: 'Custom', desc: 'For regulated delivery and bespoke SLAs.', features: ['Bespoke SLAs', 'Regulatory compliance', 'Dedicated support'] },
-];
+// ── ANIMATED CANVAS (network nodes) ──────────────────────────────────────────
+function NetworkCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef = useRef<number>(0);
 
-const features = [
-  { icon: Layers3, title: 'Modular Execution', desc: 'Projects split into resumable modules with snapshots and continuity.', color: 'from-green-400 to-emerald-600' },
-  { icon: Zap, title: 'AI-Driven', desc: 'Smart requirement intake, matching, pricing and risk scoring.', color: 'from-emerald-400 to-green-600' },
-  { icon: ShieldCheck, title: 'Enterprise Grade', desc: 'Strict access controls, reliability scoring and managed orchestration.', color: 'from-green-500 to-emerald-700' },
-];
-
-const stats = [
-  { value: '10x', label: 'Faster Delivery' },
-  { value: '95%', label: 'Client Satisfaction' },
-  { value: '500+', label: 'Projects Delivered' },
-  { value: '24/7', label: 'Support Available' },
-];
-
-export default function HomePage() {
-  const [scrollY, setScrollY] = useState(0);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [cursorState, setCursorState] = useState('default');
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [activeFeature, setActiveFeature] = useState<number | null>(null);
-  const cursorRef = useRef<HTMLDivElement>(null);
-  const followerRef = useRef<HTMLDivElement>(null);
-  const trailRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Custom cursor functionality
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const { clientX, clientY } = e;
-      setMousePosition({ x: clientX, y: clientY });
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-      if (cursorRef.current) {
-        cursorRef.current.style.left = `${clientX}px`;
-        cursorRef.current.style.top = `${clientY}px`;
-      }
+    let W = canvas.offsetWidth;
+    let H = canvas.offsetHeight;
+    canvas.width = W; canvas.height = H;
 
-      if (followerRef.current) {
-        followerRef.current.style.left = `${clientX}px`;
-        followerRef.current.style.top = `${clientY}px`;
-      }
+    type Node = { x: number; y: number; vx: number; vy: number; r: number; pulse: number };
+    const nodes: Node[] = Array.from({ length: 50 }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.35, vy: (Math.random() - 0.5) * 0.35,
+      r: Math.random() * 1.8 + 0.8, pulse: Math.random() * Math.PI * 2,
+    }));
 
-      if (trailRef.current) {
-        trailRef.current.style.left = `${clientX}px`;
-        trailRef.current.style.top = `${clientY}px`;
-      }
+    const BASE = '16, 185, 129';
+
+    const draw = () => {
+      W = canvas.offsetWidth; H = canvas.offsetHeight;
+      if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
+      ctx.clearRect(0, 0, W, H);
+      nodes.forEach(n => {
+        n.x += n.vx; n.y += n.vy; n.pulse += 0.016;
+        if (n.x < 0 || n.x > W) n.vx *= -1; if (n.y < 0 || n.y > H) n.vy *= -1;
+      });
+      for (let i = 0; i < nodes.length; i++)
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < 170) { ctx.beginPath(); ctx.strokeStyle = `rgba(${BASE},${(1 - d / 170) * 0.2})`; ctx.lineWidth = 0.6; ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y); ctx.stroke(); }
+        }
+      nodes.forEach(n => { const g = (Math.sin(n.pulse) + 1) / 2; ctx.beginPath(); ctx.arc(n.x, n.y, n.r + g, 0, Math.PI * 2); ctx.fillStyle = `rgba(${BASE},${0.4 + g * 0.5})`; ctx.fill(); });
+      animRef.current = requestAnimationFrame(draw);
     };
-
-    const handleMouseDown = () => setCursorState('click');
-    const handleMouseUp = () => setCursorState('default');
-
-    const handleMouseEnter = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.matches('a, button, input, textarea, select, [role="button"], .interactive')) {
-        setCursorState('hover');
-      }
-    };
-
-    const handleMouseLeave = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.matches('a, button, input, textarea, select, [role="button"], .interactive')) {
-        setCursorState('default');
-      }
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('mouseover', handleMouseEnter);
-    document.addEventListener('mouseout', handleMouseLeave);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('mouseover', handleMouseEnter);
-      document.removeEventListener('mouseout', handleMouseLeave);
-    };
+    animRef.current = requestAnimationFrame(draw);
+    const onResize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+    window.addEventListener('resize', onResize);
+    return () => { cancelAnimationFrame(animRef.current); window.removeEventListener('resize', onResize); };
   }, []);
 
-  // Scroll and parallax effects
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-      
-      // Parallax effects
-      const parallaxElements = document.querySelectorAll('.parallax-slow, .parallax-medium, .parallax-fast');
-      parallaxElements.forEach((el) => {
-        const rect = el.getBoundingClientRect();
-        const speed = el.classList.contains('parallax-slow') ? 0.2 : 
-                     el.classList.contains('parallax-medium') ? 0.5 : 0.8;
-        const yPos = -(rect.top * speed);
-        (el as HTMLElement).style.transform = `translateY(${yPos}px)`;
-      });
-    };
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
+}
 
-    window.addEventListener('scroll', handleScroll);
-    setIsLoaded(true);
-    
+// ── LIVE TICKER ───────────────────────────────────────────────────────────────
+const TICKER = [
+  'UPDATE  →  "UI module is 60% complete"',
+  'UPDATE  →  "Backend APIs integrated"',
+  'UPDATE  →  "Quality review passed — milestone met"',
+  'INTERNAL  →  [shift handoff — identity masked]',
+  'UPDATE  →  "Deployment preview ready"',
+  'UPDATE  →  "Auth module shipped, testing in progress"',
+];
+function DataTicker() {
+  const [idx, setIdx] = useState(0);
+  const [cursor, setCursor] = useState(true);
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % TICKER.length), 3000);
+    const c = setInterval(() => setCursor(v => !v), 500);
+    return () => { clearInterval(t); clearInterval(c); };
+  }, []);
+  return (
+    <div className="font-mono text-[11px] tracking-wider text-emerald-400/70 h-5 overflow-hidden transition-all duration-700">
+      &gt; {TICKER[idx]}{cursor ? '█' : '\u00A0'}
+    </div>
+  );
+}
+
+// ── SCROLL-REVEAL WORD COMPONENT ──────────────────────────────────────────────
+// This replicates Terminal Industries' signature:
+//   words start at opacity 0.15 (dim), then sequentially light up to 1
+//   as the user's scroll position reaches each word's threshold.
+function ScrollRevealText({ text, className }: { text: string; className?: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [progress, setProgress] = useState(0);
+  const words = text.split(' ');
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      const rect = el.getBoundingClientRect();
+      const windowH = window.innerHeight;
+      // progress 0→1 as element travels from bottom of screen to top
+      const start = windowH;
+      const end = windowH * 0.1;
+      const raw = (start - rect.top) / (start - end);
+      setProgress(Math.max(0, Math.min(1, raw)));
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Magnetic effect for interactive elements
-  const handleMagneticMove = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    const target = e.currentTarget;
-    const rect = target.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    
-    target.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
-  }, []);
+  return (
+    <div ref={containerRef} className={className}>
+      {words.map((w, i) => {
+        const threshold = i / words.length;
+        const wordProgress = Math.max(0, Math.min(1, (progress - threshold) / (1 / words.length)));
+        const opacity = 0.15 + wordProgress * 0.85;
+        return (
+          <span
+            key={i}
+            style={{ opacity, transition: 'opacity 0.3s ease', display: 'inline' }}
+          >
+            {w}{i < words.length - 1 ? ' ' : ''}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
 
-  const handleMagneticLeave = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.style.transform = 'translate(0, 0)';
+// ── STICKY FEATURE PANEL (Terminal Industries' pinned-right pattern) ──────────
+const STICKY_ITEMS = [
+  { num: '01', title: 'Submit your brief.', body: 'Describe what you need — in plain language. Our system parses it into scoped, modular specs. No technical knowledge required from your side.' },
+  { num: '02', title: 'We orchestrate, invisibly.', body: "Specialists are matched and deployed on daily shifts by our platform. You never interact with them directly — that's by design. Anonymous, accountable, continuous execution." },
+  { num: '03', title: 'Track progress, not people.', body: 'Your live feed shows milestone updates in plain language. No freelancer names, no technical jargon. Just clear, verified progress toward your deliverable.' },
+];
+
+function StickyFeaturePanel() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  // Cache the absolute top of the container once after mount.
+  // We compute it on first scroll (or after a short delay) so the DOM is settled.
+  const containerTopRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Compute the container's true distance from page top.
+    const getContainerTop = () => {
+      const el = containerRef.current;
+      if (!el) return 0;
+      // getBoundingClientRect().top is viewport-relative; add scrollY for absolute page position.
+      return el.getBoundingClientRect().top + window.scrollY;
+    };
+
+    const handleScroll = () => {
+      const el = containerRef.current;
+      if (!el) return;
+
+      // Lazily initialise container top (re-compute on every scroll to handle layout shifts).
+      const containerTop = getContainerTop();
+      const scrollable = el.offsetHeight - window.innerHeight; // total px the pin should last
+      const scrolled = window.scrollY - containerTop;
+      const fraction = Math.max(0, Math.min(1, scrolled / scrollable));
+
+      setActiveIndex(
+        Math.min(STICKY_ITEMS.length - 1, Math.floor(fraction * STICKY_ITEMS.length))
+      );
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <>
-      {/* Custom Cursor */}
-      <div ref={cursorRef} className={`cursor ${cursorState}`} />
-      <div ref={followerRef} className={`cursor-follower ${cursorState}`} />
-      <div ref={trailRef} className={`cursor-trail ${cursorState}`} />
-      
-      <main className="relative bg-white overflow-hidden" ref={containerRef}>
-        {/* Enhanced animated background */}
-        <div className="fixed inset-0 pointer-events-none">
-          {/* Geometric shapes */}
-          <div 
-            className="absolute w-80 h-80 bg-gradient-to-br from-cyan-200 to-teal-300 rounded-3xl opacity-10 blur-3xl animate-float parallax-slow"
-            style={{ 
-              left: '5%', 
-              top: '15%',
-              transform: `translate(${mousePosition.x * 0.015}px, ${mousePosition.y * 0.015}px) rotate(45deg)`
-            }}
-          />
-          <div 
-            className="absolute w-72 h-72 bg-gradient-to-tr from-emerald-200 to-green-300 rounded-full opacity-12 blur-3xl animate-float-reverse animate-delay-300 parallax-medium"
-            style={{ 
-              right: '8%', 
-              bottom: '15%',
-              transform: `translate(${-mousePosition.x * 0.015}px, ${-mousePosition.y * 0.015}px)`
-            }}
-          />
-          
-          {/* Hexagon-like shapes */}
-          <div 
-            className="absolute w-64 h-64 bg-gradient-to-bl from-teal-200 to-cyan-300 opacity-8 blur-2xl animate-morph parallax-fast"
-            style={{ 
-              left: '45%', 
-              top: '45%',
-              transform: `translate(${mousePosition.x * 0.01}px, ${mousePosition.y * 0.01}px) rotate(30deg)`
-            }}
-          />
-          
-          {/* Floating triangles */}
-          <div className="absolute w-0 h-0 border-l-[40px] border-l-transparent border-r-[40px] border-r-transparent border-b-[70px] border-b-cyan-200 opacity-15 animate-drift animate-delay-500" style={{ left: '65%', top: '25%' }} />
-          <div className="absolute w-0 h-0 border-l-[30px] border-l-transparent border-r-[30px] border-r-transparent border-b-[50px] border-b-emerald-200 opacity-12 animate-drift animate-delay-700" style={{ right: '15%', top: '55%' }} />
-          
-          {/* Circular gradients */}
-          <div className="absolute w-20 h-20 bg-radial-gradient from-cyan-300 to-transparent rounded-full opacity-20 animate-orbit" style={{ left: '25%', top: '35%' }} />
-          <div className="absolute w-16 h-16 bg-radial-gradient from-emerald-300 to-transparent rounded-full opacity-15 animate-orbit animate-delay-1200" style={{ right: '35%', top: '20%' }} />
-          
-          {/* Subtle background overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 via-transparent to-emerald-50 opacity-30 animate-breathe" />
-          
-          {/* Additional floating elements */}
-          <div className="absolute w-12 h-12 bg-teal-200 rounded-2xl opacity-18 animate-float animate-delay-900" style={{ left: '12%', top: '65%' }} />
-          <div className="absolute w-8 h-8 bg-cyan-200 rounded-full opacity-20 animate-float-reverse animate-delay-1400" style={{ right: '18%', top: '75%' }} />
-          <div className="absolute w-14 h-14 bg-emerald-200 rounded-lg opacity-14 animate-drift animate-delay-400" style={{ left: '75%', top: '45%' }} />
-          <div className="absolute w-6 h-6 bg-teal-200 rounded-full opacity-22 animate-float animate-delay-600" style={{ right: '8%', top: '35%' }} />
-          
-          {/* Wave-like elements */}
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-cyan-100 to-transparent opacity-20 animate-wave" />
-          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-emerald-100 to-transparent opacity-15 animate-wave animate-delay-800" />
+    // height = N steps × 100vh so the sticky panel stays pinned for the full scroll range
+    <div ref={containerRef} style={{ height: `${STICKY_ITEMS.length * 100}vh` }}>
+      <div className="sticky top-0 h-screen flex overflow-hidden">
+
+        {/* LEFT — all three steps are always in the DOM, active one highlighted */}
+        <div className="w-full md:w-1/2 flex flex-col justify-center px-10 md:px-20 gap-16">
+          {STICKY_ITEMS.map((item, i) => {
+            const isActive = i === activeIndex;
+            return (
+              <div
+                key={item.num}
+                style={{
+                  opacity: isActive ? 1 : 0.18,
+                  transform: isActive ? 'translateY(0)' : 'translateY(4px)',
+                  transition: 'opacity 0.6s ease, transform 0.6s ease',
+                }}
+              >
+                <div className="font-mono text-[10px] tracking-[0.2em] text-emerald-500/70 mb-4">
+                  {item.num}
+                </div>
+                <h3
+                  className="font-light leading-tight mb-4 tracking-tight"
+                  style={{
+                    fontSize: 'clamp(28px, 3.5vw, 52px)',
+                    color: isActive ? '#ffffff' : 'rgba(255,255,255,0.35)',
+                    transition: 'color 0.6s ease',
+                  }}
+                >
+                  {item.title}
+                </h3>
+                <p className="text-white/35 font-light max-w-md leading-relaxed text-[15px]">
+                  {item.body}
+                </p>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Hero Section with extreme interactivity */}
-        <section className="relative min-h-screen flex items-center justify-center px-4">
-          <div className="container text-center relative z-10">
-            <div className={`animate-slide-up ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-green-300 mb-8 bg-transparent">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm font-medium text-gray-700 bg-transparent">Managed Digital Factory for India</span>
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              </div>
-              
-              <h1 className="max-w-6xl mx-auto mb-16">
-                <div className="title-elegant text-6xl md:text-8xl lg:text-9xl mb-24">
-                  <span className="font-black">Ship Digital Products</span>
-                </div>
-                <div className="subtitle-elegant text-2xl md:text-4xl lg:text-5xl text-gray-800 font-light bg-transparent">
-                  With Enterprise Reliability
-                </div>
-              </h1>
-              
-              <p className="max-w-3xl mx-auto text-xl md:text-3xl text-gray-600 mb-12 leading-relaxed animate-slide-up animate-delay-200 bg-transparent" style={{ letterSpacing: '0.05em', wordSpacing: '0.2em' }}>
-                Convert your concepts into 
-                <span className="text-green-600 font-bold interactive hover-glow bg-transparent">enterprise-grade solutions</span>
-                through our 
-                <span className="text-green-600 font-bold interactive hover-lift bg-transparent">intelligent automation platform</span>
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16 animate-slide-up animate-delay-300">
-                <Link href="/login">
-                  <button className="btn-premium text-white text-xl font-black inline-flex items-center gap-3 interactive magnetic border border-black/10 shadow-2xl shadow-emerald-900/15 bg-gradient-to-r from-emerald-800 via-green-700 to-emerald-600 hover:brightness-110 px-10 py-5 rounded-2xl" 
-                    onMouseMove={handleMagneticMove}
-                    onMouseLeave={handleMagneticLeave}>
-                    Get Started 
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
-                </Link>
-                <Link href="/signup">
-                  <button className="btn-premium-outline text-gray-900 text-xl font-black inline-flex items-center gap-3 interactive magnetic border-2 border-black bg-white/70 backdrop-blur hover:bg-white shadow-xl shadow-black/10 px-10 py-5 rounded-2xl"
-                    onMouseMove={handleMagneticMove}
-                    onMouseLeave={handleMagneticLeave}>
-                    <Play className="w-5 h-5" />
-                    Book Demo
-                  </button>
-                </Link>
-              </div>
-            </div>
+        {/* RIGHT — pinned visual */}
+        <div className="hidden md:flex w-1/2 items-center justify-center relative bg-[#0a0a10] border-l border-white/5">
+          <MosaicGrid activeIndex={activeIndex} />
+          <div className="absolute bottom-12 left-10 font-mono text-[11px] text-white/20 tracking-widest">
+            {String(activeIndex + 1).padStart(2, '0')} / {String(STICKY_ITEMS.length).padStart(2, '0')}
           </div>
-          
-          {/* Enhanced floating elements */}
-          <div className="absolute top-20 left-10 w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl opacity-20 animate-float animate-delay-100 transform rotate-45 hover-lift interactive parallax-slow glass-subtle" />
-          <div className="absolute top-40 right-20 w-20 h-20 bg-gradient-to-br from-emerald-400 to-green-600 rounded-full opacity-20 animate-float animate-delay-300 hover-glow interactive parallax-medium glass-accent" />
-          <div className="absolute bottom-20 left-1/4 w-32 h-32 bg-gradient-to-br from-green-500 to-emerald-700 rounded-3xl opacity-20 animate-float animate-delay-200 transform rotate-12 hover-rotate interactive parallax-fast glass-subtle" />
-          <div className="absolute top-1/3 right-1/4 w-16 h-16 bg-gradient-to-br from-green-300 to-emerald-500 rounded-lg opacity-15 animate-morph hover-lift interactive glass-accent" />
-          <div className="absolute bottom-1/3 left-1/3 w-12 h-12 bg-green-200 rounded-full opacity-25 animate-drift animate-delay-700 hover-glow interactive" />
-          <div className="absolute top-1/2 right-1/3 w-8 h-8 bg-emerald-200 rounded-full opacity-30 animate-float-reverse animate-delay-900 hover-lift interactive" />
-        </section>
+        </div>
 
-        {/* Interactive Stats Section */}
-        <section className="py-20 relative">
-          <div className="container">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {stats.map((stat, index) => (
-                <div 
-                  key={stat.label} 
-                  className={`text-center animate-scale-in animate-delay-${index * 100} interactive hover-lift magnetic`}
-                  onMouseMove={handleMagneticMove}
-                  onMouseLeave={(e) => {
-                    handleMagneticLeave(e);
-                    setActiveFeature(null);
-                  }}
-                  onMouseEnter={() => setActiveFeature(index)}
-                >
-                  <div className={`text-5xl md:text-7xl font-black gradient-text mb-2 transition-all duration-300 ${activeFeature === index ? 'scale-125' : ''}`}>
-                    {stat.value}
-                  </div>
-                  <div className="text-gray-600 text-lg font-medium">{stat.label}</div>
-                </div>
-              ))}
-            </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MOSAIC GRID visual ────────────────────────────────────────────────────────
+function MosaicGrid({ activeIndex }: { activeIndex: number }) {
+  const colors = ['from-emerald-500/30', 'from-teal-500/30', 'from-cyan-500/30'];
+  return (
+    <div className="relative w-80 h-80">
+      <div className="grid grid-cols-5 grid-rows-5 gap-2 w-full h-full">
+        {Array.from({ length: 25 }).map((_, i) => (
+          <MosaicCell key={i} delay={i * 0.05} color={colors[activeIndex % colors.length]} />
+        ))}
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="font-mono text-[80px] font-light text-white/8 tracking-widest select-none transition-all duration-500">
+          {String(activeIndex + 1).padStart(2, '0')}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MosaicCell({ delay, color }: { delay: number; color: string }) {
+  const [lit, setLit] = useState(false);
+  useEffect(() => {
+    const id = setInterval(() => setLit(Math.random() > 0.65), 900 + delay * 800);
+    return () => clearInterval(id);
+  }, [delay]);
+  return (
+    <div className={`rounded-sm border border-white/5 transition-all duration-700 ${lit ? `bg-gradient-to-br ${color} opacity-80` : 'bg-white/3 opacity-30'}`} />
+  );
+}
+
+// ── PAGE ──────────────────────────────────────────────────────────────────────
+export default function HomePage() {
+  const [isLoaded, setIsLoaded] = useState(false);
+  useEffect(() => { setIsLoaded(true); }, []);
+
+  const { scrollYProgress } = useScroll();
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.12], [1, 0]);
+  const heroY = useTransform(scrollYProgress, [0, 0.15], ['0px', '-60px']);
+
+  return (
+    <main className="relative bg-[#050508] text-white overflow-hidden font-sans selection:bg-emerald-500/30">
+
+      {/* ════ 1. HERO — dark, cinematic ═══════════════════════════════════════ */}
+      <section className="relative h-[110vh] w-full flex items-center justify-center overflow-hidden">
+        {/* Network canvas */}
+        <div className="absolute inset-0">
+          <NetworkCanvas />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050508]/55 via-[#050508]/15 to-[#050508]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#050508]/80 via-transparent to-[#050508]/60" />
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 55% 45% at 50% 50%, rgba(16,185,129,0.05) 0%, transparent 70%)' }} />
+        </div>
+
+        <motion.div
+          className="relative z-20 flex flex-col items-center text-center px-6 max-w-5xl"
+          style={{ opacity: heroOpacity, y: heroY }}
+        >
+          {/* Status pill */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }} animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 14 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-center gap-3 mb-10 px-5 py-2 rounded-full border border-white/10 bg-black/30 backdrop-blur-md"
+          >
+            <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+            <span className="text-[11px] font-medium tracking-[0.18em] text-white/55 uppercase">Managed Digital Factory · India</span>
+          </motion.div>
+
+          {/* Headline — light weight, enormous, tracking tight */}
+          <motion.h1
+            initial={{ opacity: 0, y: 24 }} animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 24 }}
+            transition={{ duration: 1.1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="text-[clamp(52px,8vw,110px)] font-light tracking-[-0.04em] leading-[0.9] text-white"
+          >
+            Order it.<br />
+            <span className="text-white/30 italic">We'll build it.</span>
+          </motion.h1>
+
+          {/* Sub */}
+          <motion.p
+            initial={{ opacity: 0 }} animate={{ opacity: isLoaded ? 1 : 0 }}
+            transition={{ duration: 1, delay: 0.85 }}
+            className="mt-8 text-base md:text-lg text-white/40 max-w-xl font-light tracking-wide leading-relaxed"
+          >
+            Submit your requirements. Get live progress updates.<br />
+            We handle everything behind the scenes.
+          </motion.p>
+
+          {/* Ticker */}
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: isLoaded ? 1 : 0 }}
+            transition={{ duration: 1, delay: 1.0 }}
+            className="mt-6 px-4 py-3 border border-white/8 bg-black/25 backdrop-blur rounded-lg w-full max-w-md text-left"
+          >
+            <div className="text-[9px] font-mono tracking-[0.2em] text-white/20 uppercase mb-1.5">client update feed</div>
+            <DataTicker />
+          </motion.div>
+
+          {/* CTAs */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }} animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 14 }}
+            transition={{ duration: 0.8, delay: 1.1, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-10 flex flex-col sm:flex-row gap-4"
+          >
+            <Link href="/signup">
+              <button className="group relative px-9 py-4 bg-white text-black font-medium tracking-wide rounded-sm overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+                <span className="relative z-10 flex items-center gap-2">Submit Your Brief <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" /></span>
+                <div className="absolute inset-0 bg-slate-100 scale-x-0 origin-left transition-transform duration-300 group-hover:scale-x-100 z-0" />
+              </button>
+            </Link>
+            <Link href="/login">
+              <button className="px-9 py-4 bg-transparent text-white/60 font-medium tracking-wide rounded-sm border border-white/15 transition-all duration-300 hover:bg-white/5 hover:text-white hover:border-white/30">
+                Sign In
+              </button>
+            </Link>
+          </motion.div>
+        </motion.div>
+
+        {/* Scroll hint */}
+        <motion.div
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-20"
+          initial={{ opacity: 0 }} animate={{ opacity: isLoaded ? 1 : 0 }}
+          transition={{ delay: 1.6, duration: 1 }}
+          style={{ opacity: heroOpacity }}
+        >
+          <span className="text-[10px] tracking-[0.24em] uppercase text-white/20 font-mono">Scroll to explore</span>
+          <div className="w-[1px] h-10 bg-gradient-to-b from-white/20 to-transparent" />
+        </motion.div>
+      </section>
+
+      {/* ════ 2. "IMAGINE" — light section, giant scroll-reveal text ══════════ */}
+      <section className="relative bg-[#f0f1f4] py-32 md:py-48 px-6 md:px-20">
+        {/* Eyebrow */}
+        <div className="flex items-center gap-3 mb-16 text-[#0d1a2e]/40">
+          <div className="w-6 h-[1px] bg-current" />
+          <span className="font-mono text-[10px] tracking-[0.22em] uppercase">The concept</span>
+        </div>
+
+        {/* Terminal Industries style: enormous light-weight text that word-by-word reveals */}
+        <ScrollRevealText
+          text="Imagine commissioning software the same way enterprises procure services. You define the outcome. We deploy specialists. Your product ships — and you never once manage the people who built it."
+          className="text-[clamp(28px,4.5vw,68px)] font-light leading-[1.15] tracking-tight text-[#0d1a2e] max-w-5xl"
+        />
+
+        {/* Small caption below */}
+        <div className="mt-16 ml-1 font-mono text-[11px] tracking-[0.15em] text-[#0d1a2e]/35 uppercase">
+          Managed · Anonymous · Continuous
+        </div>
+      </section>
+
+      {/* ════ 3. STICKY "HOW IT WORKS" — pinned panel ════════════════════════ */}
+      <section className="relative bg-[#050508]">
+        {/* Section header */}
+        <div className="px-10 md:px-20 pt-24 pb-12">
+          <div className="flex items-center gap-3 text-white/20 mb-4">
+            <div className="w-6 h-[1px] bg-white/20" />
+            <span className="font-mono text-[10px] tracking-[0.2em] uppercase">Protocol</span>
           </div>
-        </section>
+          <h2 className="text-[clamp(32px,5vw,72px)] font-light tracking-tight text-white">Three moves.</h2>
+        </div>
 
-        {/* Enhanced Features Section */}
-        <section className="py-20 relative">
-          <div className="container">
-            <div className="text-center mb-16 animate-slide-up">
-              <h2 className="text-5xl md:text-7xl font-black mb-4 bg-transparent">
-                <span className="text-green-600 interactive hover-glow bg-transparent">The Digital Factory</span>
-              </h2>
-              <p className="text-2xl text-gray-600 max-w-3xl mx-auto bg-transparent">
-                Next-generation product execution with 
-                <span className="text-green-600 font-bold interactive hover-lift bg-transparent">AI-powered orchestration</span>
-              </p>
+        <StickyFeaturePanel />
+      </section>
+
+      {/* ════ 4. MOSAIC BENTO — dark section ══════════════════════════════════ */}
+      <section className="relative bg-[#050508] px-4 md:px-12 py-24">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="mb-16">
+            <div className="flex items-center gap-4 text-white/20 mb-5">
+              <div className="w-8 h-[1px] bg-white/20" />
+              <span className="font-mono text-[10px] tracking-[0.2em] uppercase">Execution Engine</span>
             </div>
-            
-            <div className="grid md:grid-cols-3 gap-8">
-              {features.map((feature, index) => (
-                <Card 
-                  key={feature.title} 
-                  className={`p-8 hover-lift bg-white border-0 shadow-2xl animate-slide-up animate-delay-${index * 200} interactive hover-glow magnetic`}
-                  onMouseMove={handleMagneticMove}
-                  onMouseLeave={(e) => {
-                    handleMagneticLeave(e);
-                    setActiveFeature(null);
-                  }}
-                  onMouseEnter={() => setActiveFeature(index + 10)}
-                >
-                  <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 transform hover:rotate-12 transition-all duration-500 ${activeFeature === index + 10 ? 'scale-110 rotate-12' : ''}`}>
-                    <feature.icon className="w-10 h-10 text-white" />
-                  </div>
-                  <h3 className="text-3xl font-black mb-4 text-gray-900 interactive hover-lift">{feature.title}</h3>
-                  <p className="text-gray-600 leading-relaxed text-lg">{feature.desc}</p>
-                  <div className="mt-6 flex items-center gap-2 text-green-600 font-bold interactive hover-glow">
-                    <span>Learn More</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </div>
-                </Card>
-              ))}
-            </div>
+            <h2 className="text-[clamp(32px,5vw,72px)] font-light tracking-tight text-white mb-5">
+              Your delivery engine.<br /><span className="text-emerald-400">Fully managed.</span>
+            </h2>
+            <p className="text-white/35 max-w-lg font-light leading-relaxed">
+              Specialists rotate on daily shifts. Handoffs happen automatically at end of day. You receive continuous progress — with zero team management overhead.
+            </p>
           </div>
-        </section>
 
-        {/* Interactive How It Works */}
-        <section className="py-20 bg-blended-green relative">
-          <div className="container">
-            <div className="text-center mb-16 animate-slide-up">
-              <h2 className="text-5xl md:text-7xl font-black mb-4 text-gray-900 interactive hover-glow bg-transparent">How It Works</h2>
-              <p className="text-2xl text-gray-600 bg-transparent">Simple process, extraordinary results</p>
-            </div>
-            
-            <div className="grid md:grid-cols-3 gap-8">
-              {[
-                { step: '01', title: 'Submit Requirements', desc: 'Share your vision with our AI-powered intake system', icon: MousePointer, svg: '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#059669"/><stop offset="1" stop-color="#10b981"/></linearGradient></defs><rect width="640" height="420" rx="28" fill="#ffffff"/><rect x="40" y="48" width="560" height="324" rx="22" fill="#ecfdf5" stroke="#059669" stroke-width="3"/><rect x="80" y="98" width="320" height="26" rx="13" fill="url(#g)" opacity="0.95"/><rect x="80" y="146" width="420" height="18" rx="9" fill="#059669" opacity="0.25"/><rect x="80" y="178" width="380" height="18" rx="9" fill="#059669" opacity="0.18"/><rect x="80" y="210" width="340" height="18" rx="9" fill="#059669" opacity="0.12"/><circle cx="520" cy="260" r="54" fill="url(#g)" opacity="0.18"/><path d="M492 266l18 18 42-52" fill="none" stroke="#059669" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
-                { step: '02', title: 'Auto-Orchestrated Execution', desc: 'Watch as AI matches and orchestrates the perfect team', icon: Cpu, svg: '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#047857"/><stop offset="1" stop-color="#059669"/></linearGradient></defs><rect width="640" height="420" rx="28" fill="#ffffff"/><rect x="60" y="70" width="520" height="280" rx="26" fill="#f0fdfa" stroke="#047857" stroke-width="3"/><rect x="120" y="130" width="160" height="160" rx="22" fill="url(#g)" opacity="0.16"/><rect x="320" y="130" width="200" height="34" rx="17" fill="url(#g)" opacity="0.9"/><rect x="320" y="186" width="240" height="18" rx="9" fill="#047857" opacity="0.22"/><rect x="320" y="218" width="210" height="18" rx="9" fill="#047857" opacity="0.16"/><rect x="320" y="250" width="180" height="18" rx="9" fill="#047857" opacity="0.12"/><path d="M146 212h108" stroke="#047857" stroke-width="10" stroke-linecap="round" opacity="0.35"/><path d="M200 158v108" stroke="#047857" stroke-width="10" stroke-linecap="round" opacity="0.25"/><circle cx="520" cy="294" r="34" fill="url(#g)" opacity="0.18"/><path d="M506 295l9 9 22-27" fill="none" stroke="#047857" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
-                { step: '03', title: 'Continuous Visibility', desc: 'Track progress in real-time with transparent workflows', icon: BarChart3, svg: '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#10b981"/><stop offset="1" stop-color="#059669"/></linearGradient></defs><rect width="640" height="420" rx="28" fill="#ffffff"/><rect x="40" y="60" width="560" height="300" rx="26" fill="#ecfdf5" stroke="#059669" stroke-width="3"/><path d="M100 300h440" stroke="#059669" stroke-width="4" opacity="0.25"/><rect x="130" y="214" width="44" height="86" rx="10" fill="url(#g)" opacity="0.85"/><rect x="210" y="182" width="44" height="118" rx="10" fill="url(#g)" opacity="0.7"/><rect x="290" y="152" width="44" height="148" rx="10" fill="url(#g)" opacity="0.6"/><rect x="370" y="126" width="44" height="174" rx="10" fill="url(#g)" opacity="0.75"/><rect x="450" y="196" width="44" height="104" rx="10" fill="url(#g)" opacity="0.55"/><path d="M120 156c40 30 70 10 110 34 38 24 74-24 110-4 38 20 70 54 140 18" fill="none" stroke="#059669" stroke-width="6" stroke-linecap="round" opacity="0.35"/><circle cx="520" cy="136" r="40" fill="url(#g)" opacity="0.16"/><path d="M502 140l13 13 30-37" fill="none" stroke="#059669" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
-              ].map((item, index) => (
-                <div 
-                  key={item.step} 
-                  className={`text-center animate-slide-up animate-delay-${index * 200} interactive hover-lift magnetic`}
-                  onMouseMove={handleMagneticMove}
-                  onMouseLeave={handleMagneticLeave}
-                >
-                  <div className="mx-auto mb-8 max-w-sm overflow-hidden rounded-2xl border border-green-700/10 bg-white shadow-xl shadow-green-900/5">
-                    <div
-                      className="h-52 w-full overflow-hidden"
-                      dangerouslySetInnerHTML={{
-                        __html: item.svg.replace(
-                          '<svg ',
-                          '<svg preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block" '
-                        ),
-                      }}
-                    />
-                  </div>
-                  <div className="relative mb-8 inline-block">
-                    <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-green-700 text-3xl font-black shadow-lg hover-glow interactive border border-green-700/20">
-                      {item.step}
-                    </div>
-                    <div className="absolute -top-2 -right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md animate-bounce-in">
-                      <item.icon className="w-5 h-5 text-green-600" />
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-black mb-3 text-gray-900 interactive hover-lift">{item.title}</h3>
-                  <p className="text-gray-600 text-lg">{item.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Enhanced CTA Section */}
-        <section className="py-20 relative">
-          <div className="container">
-            <Card className="p-16 border-0 shadow-xl text-white animate-slide-up" style={{ background: 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%)' }}>
-              <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
-                <div className="flex-1">
-                  <h2 className="text-4xl md:text-5xl font-semibold mb-6 bg-transparent" style={{ fontWeight: 300, letterSpacing: '-0.01em' }}>
-                    Ready to Transform Your Digital Delivery?
-                  </h2>
-                  <p className="text-xl text-green-50 mb-8 leading-relaxed bg-transparent" style={{ fontWeight: 400 }}>
-                    Join enterprises leveraging AI-powered orchestration for reliable, scalable product execution.
-                  </p>
-                  <div className="flex flex-wrap gap-4">
-                    <button className="btn-premium text-white font-medium inline-flex items-center gap-3">
-                      <Building2 className="w-5 h-5" />
-                      Contact Enterprise
-                    </button>
-                    <button className="btn-premium-outline text-white font-medium inline-flex items-center gap-3 bg-transparent" style={{ borderColor: 'rgba(255, 255, 255, 0.5)', color: 'white' }}>
-                      <Star className="w-5 h-5" />
-                      Schedule Demo
-                    </button>
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/5">
+            {[
+              { id: '01', label: 'THE MODEL', title: 'You never manage the team.', Icon: EyeOff, body: "Define outcomes, not processes. You submit a brief, receive live updates, and accept the final deliverable. Who built it? Our responsibility entirely." },
+              { id: '02', label: 'DAILY SHIFTS', title: 'Daily Handoffs. Zero Gaps.', Icon: RotateCcw, body: 'Each specialist works a fixed daily shift. At end of day, work is handed off to the next — your project runs continuously, without interruption.' },
+              { id: '03', label: 'CLIENT FEED', title: 'Live Progress. No Noise.', Icon: Activity, body: 'Curated milestone updates, plain language only — no technical jargon, no team details. Just verified, human-readable delivery progress.' },
+            ].map(card => (
+              <div key={card.id} className="group bg-[#070710] p-10 flex flex-col gap-6 hover:bg-[#0a0a18] transition-colors duration-300">
+                <div className="font-mono text-[10px] tracking-[0.2em] text-emerald-500/60">{card.id} // {card.label}</div>
+                <card.Icon className="w-8 h-8 text-white/15 group-hover:text-emerald-400 transition-colors duration-400" />
+                <div>
+                  <h3 className="text-xl font-light text-white mb-3">{card.title}</h3>
+                  <p className="text-sm text-white/30 font-light leading-relaxed">{card.body}</p>
                 </div>
               </div>
-            </Card>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Interactive Footer */}
-        <footer className="relative z-50 border-t border-gray-200 bg-white">
-          <div className="container py-12">
-            <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
-              <div>
-                <p className="text-green-700 font-semibold mb-4">Join our Newsletter</p>
-                <div className="flex flex-col gap-3 max-w-xs">
-                  <input
-                    type="email"
-                    placeholder="Enter your email"
-                    className="h-11 rounded-md border border-gray-300 px-4 text-sm outline-none focus:ring-2 focus:ring-green-600/30"
-                  />
-                  <button className="h-11 rounded-md bg-green-700 text-white font-semibold hover:bg-green-800 transition-colors">
-                    Subscribe
-                  </button>
-                </div>
-              </div>
+      {/* ════ 5. CTA — light background again (dark→light→dark→light rhythm) ═ */}
+      <section className="relative bg-[#f0f1f4] py-32 md:py-40 px-6 md:px-20">
+        <div className="max-w-[1400px] mx-auto">
+          {/* Word-by-word reveal on the CTA copy too */}
+          <ScrollRevealText
+            text="Define the outcome. We'll ship it."
+            className="text-[clamp(36px,5.5vw,80px)] font-light tracking-tight text-[#0d1a2e] leading-tight mb-10 max-w-3xl"
+          />
+          <p className="text-[#0d1a2e]/45 max-w-md mb-12 font-light text-lg leading-relaxed">
+            Join the enterprises that ship digital products on Gigzs — with full delivery transparency and zero team management overhead.
+          </p>
+          <Link href="/signup">
+            <button className="group inline-flex items-center gap-3 px-10 py-5 bg-[#0d1a2e] text-white font-light tracking-wide text-sm transition-all duration-300 hover:bg-[#1a2a3e]">
+              Submit Your Brief <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </button>
+          </Link>
+        </div>
+      </section>
 
-              <div>
-                <p className="text-green-700 font-semibold mb-4">Quick Links</p>
-                <div className="flex flex-col gap-2 text-sm text-gray-700">
-                  <Link href="/" className="hover:text-green-700">About Us</Link>
-                  <Link href="/#features" className="hover:text-green-700">Features</Link>
-                  <Link href="/#how-it-works" className="hover:text-green-700">How It Works</Link>
-                  <Link href="/#contact" className="hover:text-green-700">Contact</Link>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-green-700 font-semibold mb-4">Location</p>
-                <div className="flex flex-col gap-2 text-sm text-gray-700">
-                  <p>House no 108 Pachkedhi Gandhi</p>
-                  <p>Pachkedhi Kuhi,</p>
-                  <p>Nagpur, Maharashtra</p>
-                  <p>PIN: 441210</p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-green-700 font-semibold mb-4">Contact</p>
-                <div className="flex flex-col gap-2 text-sm text-gray-700">
-                  <a href="mailto:info@GIGZS.com" className="hover:text-green-700">info@GIGZS.com</a>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-10 border-t border-gray-200 pt-6 text-center text-xs text-gray-500">
-              {new Date().getFullYear()} <span className="text-green-700">GIGZS pvt ltd.</span> All rights reserved.
-            </div>
-          </div>
-        </footer>
-      </main>
-    </>
+      {/* ════ 6. FOOTER ════════════════════════════════════════════════════════ */}
+      <footer className="border-t border-white/5 bg-[#030305] py-10 px-4 md:px-12 font-mono text-[11px] text-white/25 flex flex-col md:flex-row justify-between items-center gap-6">
+        <div><span className="text-white/55 font-sans font-medium tracking-wide">GIGZS</span> — Managed Digital Factory · Nagpur, India</div>
+        <div className="flex gap-8">
+          <Link href="/login" className="hover:text-white transition-colors tracking-widest uppercase">Login</Link>
+          <Link href="/signup" className="hover:text-white transition-colors tracking-widest uppercase">Sign Up</Link>
+          <a href="mailto:info@gigzs.com" className="hover:text-white transition-colors">info@gigzs.com</a>
+        </div>
+        <div className="tracking-widest text-[10px]">© {new Date().getFullYear()} GIGZS Pvt. Ltd.</div>
+      </footer>
+    </main>
   );
 }

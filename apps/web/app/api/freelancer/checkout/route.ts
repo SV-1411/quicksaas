@@ -9,8 +9,10 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as {
       moduleId: string;
       publicSummary: string;
-      internalSummary: string;
+      internalSummary?: string;
+      handoffNotes?: string;
       percentDelta?: number;
+      progressPct?: number;
       artifacts?: Record<string, unknown>;
       deploymentUrl?: string;
       buildUrl?: string;
@@ -40,6 +42,24 @@ export async function POST(request: NextRequest) {
 
     if (!moduleRes.data) return NextResponse.json({ error: 'Module not found' }, { status: 404 });
 
+    const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+    const shiftDate = nowIST.toISOString().slice(0, 10);
+
+    // ── 1. Close the daily_shift ──────────────────────────────────────────────
+    await supabase
+      .from('daily_shifts')
+      .update({
+        status: 'checked_out',
+        checked_out_at: new Date().toISOString(),
+        eod_summary: body.internalSummary ?? '',
+        handoff_notes: body.handoffNotes ?? '',
+      })
+      .eq('module_id', body.moduleId)
+      .eq('freelancer_id', actor.id)
+      .eq('shift_date', shiftDate)
+      .eq('status', 'active');
+
+    // ── 2. Work snapshot (check_out) ─────────────────────────────────────────
     const snapshot = await supabase
       .from('work_snapshots')
       .insert({
@@ -55,15 +75,40 @@ export async function POST(request: NextRequest) {
       .select('id, created_at')
       .single();
 
+    // ── 3. Internal progress log ──────────────────────────────────────────────
+    await supabase.from('progress_logs').insert({
+      project_id: moduleRes.data.project_id,
+      module_id: body.moduleId,
+      created_by: actor.id,
+      public_summary: body.publicSummary,
+      percent_delta: body.percentDelta ?? 0,
+    });
+
+    // ── 4. Write to client_update_feed (anonymised, no freelancer info) ───────
+    const progressPct = body.progressPct ?? null;
+    await supabase.from('client_update_feed').insert({
+      project_id: moduleRes.data.project_id,
+      module_id: body.moduleId,
+      update_type: 'progress_checkpoint',
+      headline: body.publicSummary,
+      detail_md: body.handoffNotes ? `Session complete. Work handed off for continuity.` : null,
+      progress_pct: progressPct,
+    });
+
+    // ── 5. Mark assignment checked_out ────────────────────────────────────────
     await supabase
-      .from('progress_logs')
-      .insert({
-        project_id: moduleRes.data.project_id,
-        module_id: body.moduleId,
-        created_by: actor.id,
-        public_summary: body.publicSummary,
-        percent_delta: body.percentDelta ?? 0,
-      });
+      .from('project_module_assignments')
+      .update({ status: 'checked_out', released_at: new Date().toISOString() })
+      .eq('module_id', body.moduleId)
+      .eq('freelancer_id', actor.id)
+      .eq('status', 'active');
+
+    // ── 6. Set module to handoff (paused until next day) ─────────────────────
+    await supabase
+      .from('project_modules')
+      .update({ module_status: 'handoff' })
+      .eq('id', body.moduleId)
+      .eq('module_status', 'in_progress');
 
     return NextResponse.json({ ok: true, snapshot: snapshot.data });
   } catch (error) {

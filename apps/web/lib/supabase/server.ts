@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-import { env, requireEnv } from '../env';
+import { env } from '../env';
 
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -19,7 +19,9 @@ export async function createSupabaseServerClient() {
 }
 
 export function createSupabaseServiceClient() {
-  return createClient(requireEnv('NEXT_PUBLIC_SUPABASE_URL'), requireEnv('SUPABASE_SERVICE_ROLE_KEY'), {
+  // Uses service_role key — has full DB access, bypasses RLS.
+  // NEVER call this from client-side code.
+  return createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

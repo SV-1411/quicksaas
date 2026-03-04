@@ -271,6 +271,77 @@ create index if not exists idx_modules_project on public.project_modules(project
 create index if not exists idx_snapshots_module_created_at on public.module_snapshots(module_id, created_at desc) where deleted_at is null;
 create index if not exists idx_task_logs_module_freelancer on public.freelancer_task_logs(module_id, freelancer_id) where deleted_at is null;
 
+-- ══════════════════════════════════════════════════════════
+-- MCDONALD'S DAILY-SHIFT MODEL
+-- ══════════════════════════════════════════════════════════
+
+-- One row per "day on shift" for a freelancer working a module.
+-- At EOD the shift is checked_out and the module is either handed
+-- to the next freelancer or paused until the next business day.
+create table if not exists public.daily_shifts (
+  id uuid primary key default gen_random_uuid(),
+  module_id uuid not null references public.project_modules(id) on delete cascade,
+  -- The freelancer id is INTERNAL only — never exposed to clients.
+  freelancer_id uuid not null references public.users(id) on delete cascade,
+  assignment_id uuid references public.project_module_assignments(id) on delete set null,
+  shift_date date not null,           -- calendar day (IST)
+  daily_wage_inr numeric(10,2) not null default 0,
+  status public.shift_status not null default 'scheduled',
+  checked_in_at timestamptz,
+  checked_out_at timestamptz,
+  eod_summary text,                   -- freelancer's end-of-day note (internal)
+  handoff_notes text,                 -- handed to the next freelancer (internal)
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  deleted_at timestamptz,
+  unique(module_id, freelancer_id, shift_date)
+);
+
+create index if not exists idx_daily_shifts_module_date
+  on public.daily_shifts(module_id, shift_date desc)
+  where deleted_at is null;
+
+create index if not exists idx_daily_shifts_freelancer_status
+  on public.daily_shifts(freelancer_id, status)
+  where deleted_at is null;
+
+-- ══════════════════════════════════════════════════════════
+-- CLIENT UPDATE FEED
+-- A sanitised, client-visible stream of project progress.
+-- Freelancer identity is NEVER stored or exposed here.
+-- Think of it like a delivery tracker — the client sees
+-- "Your order is being prepared" not who the cook is.
+-- ══════════════════════════════════════════════════════════
+do $$ begin
+  create type public.update_type as enum (
+    'intake_complete',
+    'module_started',
+    'progress_checkpoint',
+    'module_completed',
+    'project_completed',
+    'blocked',
+    'milestone_reached'
+  );
+exception when duplicate_object then null;
+end $$;
+
+create table if not exists public.client_update_feed (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  module_id uuid references public.project_modules(id) on delete cascade,
+  -- NO freelancer_id column — identity is fully stripped.
+  update_type public.update_type not null,
+  headline text not null,             -- Short, client-friendly message e.g. "UI module is 60% complete"
+  detail_md text,                     -- Optional markdown detail visible in client portal
+  progress_pct integer check (progress_pct between 0 and 100),
+  created_at timestamptz not null default now(),
+  deleted_at timestamptz
+);
+
+create index if not exists idx_client_feed_project_created
+  on public.client_update_feed(project_id, created_at desc)
+  where deleted_at is null;
+
 -- DISABLE ALL RLS TO UNBLOCK
 alter table public.users disable row level security;
 alter table public.projects disable row level security;
@@ -288,6 +359,8 @@ alter table public.work_snapshots disable row level security;
 alter table public.progress_logs disable row level security;
 alter table public.reassignment_events disable row level security;
 alter table public.payout_ledger disable row level security;
+alter table public.daily_shifts disable row level security;
+alter table public.client_update_feed disable row level security;
 
 -- GRANT OPEN PERMISSIONS
 GRANT ALL ON SCHEMA public TO anon, authenticated, service_role;

@@ -1,9 +1,9 @@
 'use client';
 
-import { FormEvent, useState, useEffect, useRef } from 'react';
+import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '../../components/ui/button';
-import { Card } from '../../components/ui/card';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,78 +11,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  
-  // Custom cursor state
-  const [cursorState, setCursorState] = useState<'default' | 'hover' | 'click'>('default');
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const cursorRef = useRef<HTMLDivElement>(null);
-  const followerRef = useRef<HTMLDivElement>(null);
-  const trailRef = useRef<HTMLDivElement>(null);
-
-  // Custom cursor handlers
-  const handleMagneticMove = (e: React.MouseEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    
-    (e.currentTarget as HTMLElement).style.transform = `translate(${x * 0.15}px, ${y * 0.15}px)`;
-  };
-
-  const handleMagneticLeave = (e: React.MouseEvent) => {
-    (e.currentTarget as HTMLElement).style.transform = 'translate(0px, 0px)';
-  };
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-      
-      if (cursorRef.current) {
-        cursorRef.current.style.left = `${e.clientX}px`;
-        cursorRef.current.style.top = `${e.clientY}px`;
-      }
-      
-      if (followerRef.current) {
-        followerRef.current.style.left = `${e.clientX}px`;
-        followerRef.current.style.top = `${e.clientY}px`;
-      }
-      
-      if (trailRef.current) {
-        trailRef.current.style.left = `${e.clientX}px`;
-        trailRef.current.style.top = `${e.clientY}px`;
-      }
-    };
-
-    const handleMouseDown = () => setCursorState('click');
-    const handleMouseUp = () => setCursorState('default');
-    
-    const handleMouseEnter = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.matches('button, a, input, .interactive, .magnetic')) {
-        setCursorState('hover');
-      }
-    };
-    
-    const handleMouseLeave = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.matches('button, a, input, .interactive, .magnetic')) {
-        setCursorState('default');
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('mouseover', handleMouseEnter);
-    window.addEventListener('mouseout', handleMouseLeave);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('mouseover', handleMouseEnter);
-      window.removeEventListener('mouseout', handleMouseLeave);
-    };
-  }, []);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -101,74 +29,86 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      {/* Custom Cursor */}
-      <div ref={cursorRef} className={`cursor ${cursorState}`} />
-      <div ref={followerRef} className={`cursor-follower ${cursorState}`} />
-      <div ref={trailRef} className={`cursor-trail ${cursorState}`} />
-      
-      <main className="container flex min-h-screen items-center justify-center py-12 relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute w-96 h-96 bg-green-200 rounded-full opacity-10 blur-3xl animate-float" style={{ left: '10%', top: '20%' }} />
-          <div className="absolute w-96 h-96 bg-emerald-200 rounded-full opacity-10 blur-3xl animate-float animate-delay-200" style={{ right: '10%', bottom: '20%' }} />
-        </div>
-        
-        <Card className="w-full max-w-md p-8 relative z-10 animate-scale-in border-0 shadow-xl interactive magnetic" 
-          onMouseMove={handleMagneticMove}
-          onMouseLeave={handleMagneticLeave}>
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-4 interactive hover-lift">
-              <span className="text-white text-2xl font-bold">G</span>
-            </div>
-            <h1 className="font-[var(--font-heading)] text-3xl font-bold gradient-text">Welcome back</h1>
-            <p className="mt-2 text-gray-600">Sign in to access your Gigzs workspace.</p>
+    <main className="relative min-h-screen bg-[#050508] flex items-center justify-center px-4 overflow-hidden font-sans">
+      {/* Ambient glow */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 40%, rgba(16,185,129,0.05) 0%, transparent 70%)' }} />
+
+      {/* Back to landing */}
+      <Link href="/" className="absolute top-8 left-8 font-mono text-[11px] tracking-[0.2em] uppercase text-white/25 hover:text-white/60 transition-colors flex items-center gap-2">
+        ← Gigzs
+      </Link>
+
+      <div className="relative z-10 w-full max-w-sm">
+        {/* Header */}
+        <div className="mb-10 text-center">
+          <div className="inline-flex items-center gap-2 mb-8 px-4 py-1.5 rounded-full border border-white/8 bg-white/3 backdrop-blur">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+            <span className="font-mono text-[10px] tracking-[0.18em] text-white/40 uppercase">Secure Access</span>
           </div>
-          
-          <form className="space-y-4" onSubmit={onSubmit}>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Work email</label>
-              <input 
-                className="w-full rounded-lg border border-gray-200 bg-white p-3 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 interactive" 
-                placeholder="Enter your email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
+          <h1 className="text-3xl font-light tracking-tight text-white mb-2">Welcome back.</h1>
+          <p className="text-white/35 font-light text-sm">Sign in to your Gigzs workspace.</p>
+        </div>
+
+        {/* Form card */}
+        <div className="border border-white/8 bg-[#0a0a12] rounded-xl p-8 backdrop-blur-sm">
+          <form className="space-y-5" onSubmit={onSubmit}>
+            <div className="space-y-1.5">
+              <label className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/35">Work email</label>
+              <input
+                type="email"
+                required
+                className="w-full bg-[#0d0d18] border border-white/8 rounded-sm px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all duration-200"
+                placeholder="you@company.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
               />
             </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Password</label>
-              <input 
-                className="w-full rounded-lg border border-gray-200 bg-white p-3 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 interactive" 
-                placeholder="Enter your password" 
-                type="password" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
+
+            <div className="space-y-1.5">
+              <label className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/35">Password</label>
+              <input
+                type="password"
+                required
+                className="w-full bg-[#0d0d18] border border-white/8 rounded-sm px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all duration-200"
+                placeholder="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
               />
             </div>
-            
-            {error && <p className="text-sm text-red-500 animate-slide-up">{error}</p>}
-            
-            <Button 
-              className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all duration-300 interactive magnetic" 
+
+            {error && (
+              <p className="text-xs text-red-400/80 font-mono border border-red-500/20 bg-red-500/5 rounded px-3 py-2">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
               disabled={loading}
-              onMouseMove={handleMagneticMove}
-              onMouseLeave={handleMagneticLeave}
+              className="group w-full mt-2 relative py-3.5 bg-white text-black text-sm font-medium tracking-wide rounded-sm overflow-hidden transition-all duration-300 hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </Button>
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                {loading ? 'Signing in…' : (<>Sign in <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" /></>)}
+              </span>
+              <div className="absolute inset-0 bg-slate-100 scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-300 z-0" />
+            </button>
           </form>
-          
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <a href="/signup" className="text-green-600 hover:text-green-700 font-medium transition-colors interactive hover-glow">
-                Sign up
-              </a>
+
+          <div className="mt-6 pt-6 border-t border-white/5 text-center">
+            <p className="text-white/25 text-xs font-mono">
+              No account?{' '}
+              <Link href="/signup" className="text-emerald-400/80 hover:text-emerald-400 transition-colors">
+                Submit your first brief →
+              </Link>
             </p>
           </div>
-        </Card>
-      </main>
-    </>
+        </div>
+
+        {/* Footer note */}
+        <p className="text-center text-white/15 font-mono text-[10px] tracking-widest mt-6 uppercase">
+          Gigzs · Managed Digital Factory
+        </p>
+      </div>
+    </main>
   );
 }

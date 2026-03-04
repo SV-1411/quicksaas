@@ -20,19 +20,20 @@
 }
 
 html[data-theme='starbucks'] {
-  --background: 0 0% 100%;
-  --foreground: 162 69% 12%;
-  --card: 0 0% 100%;
-  --muted: 162 20% 96%;
-  --muted-foreground: 162 30% 40%;
-  --border: 162 20% 88%;
-  --primary: 162 69% 16%;
+  /* Dark industrial palette — matches #050508 landing page */
+  --background: 240 10% 3%;        /* #050508 */
+  --foreground: 0 0% 95%;          /* near-white text */
+  --card: 240 10% 5%;              /* #0a0a12 card bg */
+  --muted: 240 10% 8%;
+  --muted-foreground: 0 0% 40%;    /* white/40 */
+  --border: 0 0% 100% / 0.06;     /* white/6 */
+  --primary: 160 84% 39%;          /* emerald-500 */
   --primary-foreground: 0 0% 100%;
-  --accent: 162 45% 95%;
-  --sidebar-background: 162 69% 12%;
-  --sidebar-foreground: 0 0% 100%;
-  --sidebar-accent: 162 69% 8%;
-  --sidebar-border: 162 69% 8%;
+  --accent: 160 84% 39%;
+  --sidebar-background: 240 10% 4%;
+  --sidebar-foreground: 0 0% 95%;
+  --sidebar-accent: 240 10% 6%;
+  --sidebar-border: 0 0% 100% / 0.05;
 }
 
 html[data-theme='ocean'] {

@@ -31,6 +31,10 @@ const config: Config = {
       borderRadius: {
         xl: '1rem',
       },
+      fontFamily: {
+        sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-geist-mono)', 'monospace'],
+      },
     },
   },
   plugins: [],
