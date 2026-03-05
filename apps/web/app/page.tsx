@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, RotateCcw, EyeOff, Activity } from 'lucide-react';
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { motion, useScroll, useTransform, useInView, useMotionValue, useSpring } from 'framer-motion';
+import { motion, useScroll, useTransform, useInView, useMotionValue, useSpring, useMotionValueEvent } from 'framer-motion';
 
 // ── ANIMATED CANVAS (network nodes) ──────────────────────────────────────────
 function NetworkCanvas() {
@@ -21,10 +21,10 @@ function NetworkCanvas() {
     canvas.width = W; canvas.height = H;
 
     type Node = { x: number; y: number; vx: number; vy: number; r: number; pulse: number };
-    const nodes: Node[] = Array.from({ length: 50 }, () => ({
+    const nodes: Node[] = Array.from({ length: 30 }, () => ({
       x: Math.random() * W, y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.35, vy: (Math.random() - 0.5) * 0.35,
-      r: Math.random() * 1.8 + 0.8, pulse: Math.random() * Math.PI * 2,
+      vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
+      r: Math.random() * 1.5 + 0.8, pulse: Math.random() * Math.PI * 2,
     }));
 
     const BASE = '16, 185, 129';
@@ -83,40 +83,33 @@ function DataTicker() {
 // This replicates Terminal Industries' signature:
 //   words start at opacity 0.15 (dim), then sequentially light up to 1
 //   as the user's scroll position reaches each word's threshold.
+function Word({ children, progress, range }: { children: React.ReactNode, progress: any, range: [number, number] }) {
+  const opacity = useTransform(progress, range, [0.15, 1]);
+  return (
+    <motion.span style={{ opacity, display: 'inline' }}>
+      {children}
+    </motion.span>
+  );
+}
+
 function ScrollRevealText({ text, className }: { text: string; className?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [progress, setProgress] = useState(0);
-  const words = text.split(' ');
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start 90%", "center 45%"]
+  });
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const handleScroll = () => {
-      const rect = el.getBoundingClientRect();
-      const windowH = window.innerHeight;
-      // progress 0→1 as element travels from bottom of screen to top
-      const start = windowH;
-      const end = windowH * 0.1;
-      const raw = (start - rect.top) / (start - end);
-      setProgress(Math.max(0, Math.min(1, raw)));
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const words = text.split(' ');
 
   return (
     <div ref={containerRef} className={className}>
       {words.map((w, i) => {
-        const threshold = i / words.length;
-        const wordProgress = Math.max(0, Math.min(1, (progress - threshold) / (1 / words.length)));
-        const opacity = 0.15 + wordProgress * 0.85;
+        const start = i / words.length;
+        const end = start + (1 / words.length);
         return (
-          <span
-            key={i}
-            style={{ opacity, transition: 'opacity 0.3s ease', display: 'inline' }}
-          >
-            {w}{i < words.length - 1 ? ' ' : ''}
+          <span key={i}>
+            <Word progress={scrollYProgress} range={[start, end]}>{w}</Word>
+            {i < words.length - 1 ? ' ' : ''}
           </span>
         );
       })}
@@ -134,37 +127,25 @@ const STICKY_ITEMS = [
 function StickyFeaturePanel() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  // Cache the absolute top of the container once after mount.
-  // We compute it on first scroll (or after a short delay) so the DOM is settled.
-  const containerTopRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    // Compute the container's true distance from page top.
-    const getContainerTop = () => {
-      const el = containerRef.current;
-      if (!el) return 0;
-      // getBoundingClientRect().top is viewport-relative; add scrollY for absolute page position.
-      return el.getBoundingClientRect().top + window.scrollY;
-    };
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    // Start tracking when the container's top hits the viewport top
+    // End when container's bottom hits viewport bottom
+    offset: ["start start", "end end"]
+  });
 
-    const handleScroll = () => {
-      const el = containerRef.current;
-      if (!el) return;
-
-      // Lazily initialise container top (re-compute on every scroll to handle layout shifts).
-      const containerTop = getContainerTop();
-      const scrollable = el.offsetHeight - window.innerHeight; // total px the pin should last
-      const scrolled = window.scrollY - containerTop;
-      const fraction = Math.max(0, Math.min(1, scrolled / scrollable));
-
-      setActiveIndex(
-        Math.min(STICKY_ITEMS.length - 1, Math.floor(fraction * STICKY_ITEMS.length))
-      );
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    // latest maps 0 to 1 over the 200vh scroll window.
+    // If length is 3, segments are [0..0.33), [0.33..0.66), [0.66..1]
+    const idx = Math.min(
+      STICKY_ITEMS.length - 1,
+      Math.floor(latest * STICKY_ITEMS.length * 0.99) // 0.99 ensures we don't hit 3 early
+    );
+    if (idx !== activeIndex) {
+      setActiveIndex(idx);
+    }
+  });
 
   return (
     // height = N steps × 100vh so the sticky panel stays pinned for the full scroll range
@@ -172,32 +153,39 @@ function StickyFeaturePanel() {
       <div className="sticky top-0 h-screen flex overflow-hidden">
 
         {/* LEFT — all three steps are always in the DOM, active one highlighted */}
-        <div className="w-full md:w-1/2 flex flex-col justify-center px-10 md:px-20 gap-16">
+        <div className="w-full md:w-1/2 flex flex-col justify-center px-8 md:px-16 gap-10">
+          <div className="mb-8">
+            <div className="flex items-center gap-3 text-white/20 mb-3">
+              <div className="w-6 h-[1px] bg-white/20" />
+              <span className="font-mono text-[10px] tracking-[0.2em] uppercase">Protocol</span>
+            </div>
+            <h2 className="text-[clamp(32px,5vw,72px)] font-light tracking-tight text-white leading-none">Three moves.</h2>
+          </div>
           {STICKY_ITEMS.map((item, i) => {
             const isActive = i === activeIndex;
             return (
               <div
                 key={item.num}
                 style={{
-                  opacity: isActive ? 1 : 0.18,
-                  transform: isActive ? 'translateY(0)' : 'translateY(4px)',
-                  transition: 'opacity 0.6s ease, transform 0.6s ease',
+                  opacity: isActive ? 1 : 0.15,
+                  transform: isActive ? 'translateY(0)' : 'translateY(8px)',
+                  transition: 'opacity 0.5s ease, transform 0.5s ease',
                 }}
               >
-                <div className="font-mono text-[10px] tracking-[0.2em] text-emerald-500/70 mb-4">
+                <div className="font-mono text-[10px] tracking-[0.2em] text-emerald-500/70 mb-2">
                   {item.num}
                 </div>
                 <h3
-                  className="font-light leading-tight mb-4 tracking-tight"
+                  className="font-light leading-tight mb-2 tracking-tight"
                   style={{
-                    fontSize: 'clamp(28px, 3.5vw, 52px)',
-                    color: isActive ? '#ffffff' : 'rgba(255,255,255,0.35)',
-                    transition: 'color 0.6s ease',
+                    fontSize: 'clamp(24px, 3vw, 42px)',
+                    color: isActive ? '#ffffff' : 'rgba(255,255,255,0.3)',
+                    transition: 'color 0.5s ease',
                   }}
                 >
                   {item.title}
                 </h3>
-                <p className="text-white/35 font-light max-w-md leading-relaxed text-[15px]">
+                <p className="text-white/40 font-light max-w-sm leading-relaxed text-[14px]">
                   {item.body}
                 </p>
               </div>
@@ -258,10 +246,10 @@ export default function HomePage() {
   const heroY = useTransform(scrollYProgress, [0, 0.15], ['0px', '-60px']);
 
   return (
-    <main className="relative bg-[#050508] text-white overflow-hidden font-sans selection:bg-emerald-500/30">
+    <main className="relative bg-[#050508] text-white font-sans selection:bg-emerald-500/30">
 
       {/* ════ 1. HERO — dark, cinematic ═══════════════════════════════════════ */}
-      <section className="relative h-[110vh] w-full flex items-center justify-center overflow-hidden">
+      <section className="relative h-[95vh] w-full flex items-center justify-center">
         {/* Network canvas */}
         <div className="absolute inset-0">
           <NetworkCanvas />
@@ -347,9 +335,9 @@ export default function HomePage() {
       </section>
 
       {/* ════ 2. "IMAGINE" — light section, giant scroll-reveal text ══════════ */}
-      <section className="relative bg-[#f0f1f4] py-32 md:py-48 px-6 md:px-20">
+      <section className="relative bg-[#f0f1f4] py-20 md:py-24 px-6 md:px-20 flex flex-col justify-center min-h-[70vh]">
         {/* Eyebrow */}
-        <div className="flex items-center gap-3 mb-16 text-[#0d1a2e]/40">
+        <div className="flex items-center gap-3 mb-10 text-[#0d1a2e]/40">
           <div className="w-6 h-[1px] bg-current" />
           <span className="font-mono text-[10px] tracking-[0.22em] uppercase">The concept</span>
         </div>
@@ -357,46 +345,39 @@ export default function HomePage() {
         {/* Terminal Industries style: enormous light-weight text that word-by-word reveals */}
         <ScrollRevealText
           text="Imagine commissioning software the same way enterprises procure services. You define the outcome. We deploy specialists. Your product ships — and you never once manage the people who built it."
-          className="text-[clamp(28px,4.5vw,68px)] font-light leading-[1.15] tracking-tight text-[#0d1a2e] max-w-5xl"
+          className="text-[clamp(28px,4.5vw,64px)] font-light leading-[1.1] tracking-tight text-[#0d1a2e] max-w-5xl"
         />
 
         {/* Small caption below */}
-        <div className="mt-16 ml-1 font-mono text-[11px] tracking-[0.15em] text-[#0d1a2e]/35 uppercase">
+        <div className="mt-12 ml-1 font-mono text-[11px] tracking-[0.15em] text-[#0d1a2e]/35 uppercase border-l-2 border-[#0d1a2e]/10 pl-4 py-1">
           Managed · Anonymous · Continuous
         </div>
       </section>
 
       {/* ════ 3. STICKY "HOW IT WORKS" — pinned panel ════════════════════════ */}
       <section className="relative bg-[#050508]">
-        {/* Section header */}
-        <div className="px-10 md:px-20 pt-24 pb-12">
-          <div className="flex items-center gap-3 text-white/20 mb-4">
-            <div className="w-6 h-[1px] bg-white/20" />
-            <span className="font-mono text-[10px] tracking-[0.2em] uppercase">Protocol</span>
-          </div>
-          <h2 className="text-[clamp(32px,5vw,72px)] font-light tracking-tight text-white">Three moves.</h2>
-        </div>
+        {/* Handled fully within the StickyFeaturePanel component now */}
 
         <StickyFeaturePanel />
       </section>
 
       {/* ════ 4. MOSAIC BENTO — dark section ══════════════════════════════════ */}
-      <section className="relative bg-[#050508] px-4 md:px-12 py-24">
+      <section className="relative bg-[#050508] px-4 md:px-12 py-12 md:py-20 border-t border-white/5">
         <div className="max-w-[1400px] mx-auto">
-          <div className="mb-16">
-            <div className="flex items-center gap-4 text-white/20 mb-5">
-              <div className="w-8 h-[1px] bg-white/20" />
-              <span className="font-mono text-[10px] tracking-[0.2em] uppercase">Execution Engine</span>
+          <div className="mb-12">
+            <div className="flex items-center gap-4 text-emerald-500/40 mb-4">
+              <div className="w-8 h-[1px] bg-current" />
+              <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-emerald-500/60">Execution Engine</span>
             </div>
-            <h2 className="text-[clamp(32px,5vw,72px)] font-light tracking-tight text-white mb-5">
+            <h2 className="text-[clamp(32px,4vw,56px)] font-light tracking-tight text-white mb-4 leading-tight">
               Your delivery engine.<br /><span className="text-emerald-400">Fully managed.</span>
             </h2>
-            <p className="text-white/35 max-w-lg font-light leading-relaxed">
+            <p className="text-white/35 max-w-xl font-light leading-relaxed">
               Specialists rotate on daily shifts. Handoffs happen automatically at end of day. You receive continuous progress — with zero team management overhead.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/5 rounded-sm overflow-hidden border border-white/5">
             {[
               { id: '01', label: 'THE MODEL', title: 'You never manage the team.', Icon: EyeOff, body: "Define outcomes, not processes. You submit a brief, receive live updates, and accept the final deliverable. Who built it? Our responsibility entirely." },
               { id: '02', label: 'DAILY SHIFTS', title: 'Daily Handoffs. Zero Gaps.', Icon: RotateCcw, body: 'Each specialist works a fixed daily shift. At end of day, work is handed off to the next — your project runs continuously, without interruption.' },
@@ -416,19 +397,20 @@ export default function HomePage() {
       </section>
 
       {/* ════ 5. CTA — light background again (dark→light→dark→light rhythm) ═ */}
-      <section className="relative bg-[#f0f1f4] py-32 md:py-40 px-6 md:px-20">
+      <section className="relative bg-[#f0f1f4] py-20 md:py-28 px-6 md:px-20 border-t border-black/5">
         <div className="max-w-[1400px] mx-auto">
           {/* Word-by-word reveal on the CTA copy too */}
           <ScrollRevealText
             text="Define the outcome. We'll ship it."
-            className="text-[clamp(36px,5.5vw,80px)] font-light tracking-tight text-[#0d1a2e] leading-tight mb-10 max-w-3xl"
+            className="text-[clamp(32px,4.5vw,64px)] font-light tracking-tight text-[#0d1a2e] leading-tight mb-8 max-w-2xl"
           />
-          <p className="text-[#0d1a2e]/45 max-w-md mb-12 font-light text-lg leading-relaxed">
+          <p className="text-[#0d1a2e]/50 max-w-md mb-10 font-light text-base md:text-lg leading-relaxed">
             Join the enterprises that ship digital products on Gigzs — with full delivery transparency and zero team management overhead.
           </p>
           <Link href="/signup">
-            <button className="group inline-flex items-center gap-3 px-10 py-5 bg-[#0d1a2e] text-white font-light tracking-wide text-sm transition-all duration-300 hover:bg-[#1a2a3e]">
-              Submit Your Brief <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            <button className="group inline-flex items-center gap-3 px-8 py-4 bg-[#0d1a2e] text-white font-light tracking-wide text-sm rounded-sm transition-all duration-300 hover:bg-[#1a2a3e] shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+              <span className="relative z-10 flex items-center gap-2">Submit Your Brief <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" /></span>
+              <div className="absolute inset-0 bg-[#1e2e45] scale-x-0 origin-left transition-transform duration-300 group-hover:scale-x-100 z-0 opacity-0 group-hover:opacity-100" />
             </button>
           </Link>
         </div>

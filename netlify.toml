@@ -1,0 +1,12 @@
+[build]
+  # Set the base directory to the Next.js app
+  base = "apps/web"
+  
+  # Run the standard Next.js build
+  command = "npm run build"
+  
+  # Tell Netlify to serve the typical Next.js output folder
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

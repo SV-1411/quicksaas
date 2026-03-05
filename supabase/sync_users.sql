@@ -22,9 +22,17 @@ begin
     'User'
   );
 
-  insert into public.users (auth_user_id, email, full_name, role)
-  values (new.id, new.email, _full_name, _role)
-  on conflict (auth_user_id) do nothing;  -- safe if row already exists
+  -- Attempt to update an existing user first (if they exist by email but lost their auth link)
+  update public.users 
+  set auth_user_id = new.id, full_name = _full_name, role = _role, updated_at = now()
+  where email = new.email;
+
+  -- If no row was updated, insert a new one
+  if not found then
+    insert into public.users (auth_user_id, email, full_name, role)
+    values (new.id, new.email, _full_name, _role)
+    on conflict (auth_user_id) do nothing;
+  end if;
 
   return new;
 end;

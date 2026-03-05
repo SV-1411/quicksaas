@@ -23,7 +23,14 @@ export default function SignupPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, fullName, role }),
     });
-    const payload = await response.json();
+    let payload;
+    try {
+      payload = await response.json();
+    } catch (err) {
+      setLoading(false);
+      return setError('Server returned an unexpected response format. Please refresh and try again.');
+    }
+
     setLoading(false);
     if (!response.ok) return setError(payload.error ?? 'Signup failed');
     // Go directly to dashboard (or /login if auto-sign-in failed)
